@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "toaster-ocr"
 version = "0.1.0"
-description = "CPU-first composable document OCR: Indra + PP-DocLayoutV3 + SLANet + confidence-switched PP-OCRv6"
+description = "CPU-first document OCR pipeline combining Indra, PP-DocLayoutV3, SLANet, and confidence-switched PP-OCRv6"
 readme = "README.md"
 license = {text = "Apache-2.0"}
 requires-python = ">=3.10"
