@@ -1,0 +1,181 @@
+{
+  "generated_at": "2026-11-16",
+  "hardware": "ARM64 CPU-only, CPUs 0,1 (taskset -c 0,1 nice -n 10, 2 intra-op threads, serial execution)",
+  "calibration_note": "Confidence threshold conf<=0.96 was chosen on DEV100 (100 OmniDocBench pages); NEW100 (100 pages) and OLM24 (24 olmOCR-bench pages) are completely disjoint held-out evaluations.",
+  "new100_omnidoc": {
+    "pages": 100,
+    "split": "60 table / 40 control, 50 EN / 50 ZH, 0% overlap with DEV100",
+    "formula_matched_count": 67,
+    "notes": "Evaluated with OmniDocBench End2EndDataset (quick_match, match_workers=1); CDM omitted.",
+    "arms": {
+      "indra_native": {
+        "escalated_pct": 0.0,
+        "mean_seconds_per_page": 1.91,
+        "median_seconds_per_page": 1.63,
+        "p90_seconds_per_page": 3.17,
+        "ppv6_mean_seconds": 0.0,
+        "text_block_ed_page_avg": 0.1329,
+        "text_block_ed_whole": 0.1700,
+        "reading_order_ed_page_avg": 0.2978,
+        "table_teds": 0.4308,
+        "table_teds_structure_only": 0.6023,
+        "display_formula_norm_ed": 0.7498
+      },
+      "indra_pp_slanet": {
+        "escalated_pct": 0.0,
+        "mean_seconds_per_page": 7.00,
+        "median_seconds_per_page": 6.43,
+        "p90_seconds_per_page": 9.00,
+        "ppv6_mean_seconds": 0.0,
+        "text_block_ed_page_avg": 0.1317,
+        "text_block_ed_whole": 0.1687,
+        "reading_order_ed_page_avg": 0.2722,
+        "table_teds": 0.6333,
+        "table_teds_structure_only": 0.7892,
+        "display_formula_norm_ed": 0.7469
+      },
+      "ppv6_2switch": {
+        "escalated_pct": 17.79,
+        "escalated_items": "4297/24156",
+        "layout_pages_pct": 72.0,
+        "mean_seconds_per_page": 8.84,
+        "median_seconds_per_page": 7.94,
+        "p90_seconds_per_page": 13.51,
+        "text_block_ed_page_avg": 0.1209,
+        "text_block_ed_whole": 0.1645,
+        "reading_order_ed_page_avg": 0.2716,
+        "table_teds": 0.6211,
+        "table_teds_structure_only": 0.7736,
+        "display_formula_norm_ed": 0.7311
+      },
+      "ppv6_cascade_096": {
+        "escalated_pct": 17.79,
+        "escalated_items": "4297/24156",
+        "mean_seconds_per_page": 9.91,
+        "median_seconds_per_page": 8.38,
+        "p90_seconds_per_page": 13.51,
+        "ppv6_mean_seconds": 2.70,
+        "ppv6_median_seconds": 1.59,
+        "text_block_ed_page_avg": 0.1209,
+        "text_block_ed_whole": 0.1645,
+        "reading_order_ed_page_avg": 0.2716,
+        "table_teds": 0.6367,
+        "table_teds_structure_only": 0.7892,
+        "display_formula_norm_ed": 0.7311
+      },
+      "ppv6_full_100": {
+        "escalated_pct": 99.97,
+        "escalated_items": "24148/24156",
+        "mean_seconds_per_page": 22.39,
+        "median_seconds_per_page": 19.37,
+        "p90_seconds_per_page": 36.92,
+        "ppv6_mean_seconds": 15.24,
+        "ppv6_median_seconds": 12.57,
+        "text_block_ed_page_avg": 0.1198,
+        "text_block_ed_whole": 0.1644,
+        "reading_order_ed_page_avg": 0.2726,
+        "table_teds": 0.6369,
+        "table_teds_structure_only": 0.7892,
+        "display_formula_norm_ed": 0.7311
+      }
+    }
+  },
+  "olm24_pilot": {
+    "pages": 24,
+    "total_unit_tests": 188,
+    "notes": "present/absent/order/table run unmodified allenai/olmocr tests.py; math runs KaTeX 0.16.22 MathML symbol equivalence via omni_parse_bench.equations.",
+    "arms": {
+      "indra_native": {
+        "escalated_pct": 0.0,
+        "mean_seconds_per_page": 2.25,
+        "median_seconds_per_page": 1.70,
+        "passed": 65,
+        "total": 188,
+        "pass_rate_pct": 34.57,
+        "by_category_pct": {
+          "long_tiny_text": 88.89,
+          "multi_column": 84.62,
+          "table_tests": 72.00,
+          "headers_footers": 31.25,
+          "arxiv_math": 20.83,
+          "old_scans": 4.17,
+          "old_scans_math": 1.69
+        }
+      },
+      "indra_pp_slanet": {
+        "escalated_pct": 0.0,
+        "mean_seconds_per_page": 6.68,
+        "median_seconds_per_page": 5.95,
+        "passed": 67,
+        "total": 188,
+        "pass_rate_pct": 35.64,
+        "by_category_pct": {
+          "long_tiny_text": 88.89,
+          "multi_column": 92.31,
+          "table_tests": 76.00,
+          "headers_footers": 31.25,
+          "arxiv_math": 20.83,
+          "old_scans": 4.17,
+          "old_scans_math": 1.69
+        }
+      },
+      "ppv6_2switch": {
+        "escalated_pct": 31.67,
+        "escalated_items": "1240/3915",
+        "layout_pages_pct": 37.5,
+        "mean_seconds_per_page": 8.12,
+        "median_seconds_per_page": 5.69,
+        "passed": 66,
+        "total": 188,
+        "pass_rate_pct": 35.11,
+        "by_category_pct": {
+          "long_tiny_text": 92.59,
+          "multi_column": 92.31,
+          "table_tests": 76.00,
+          "headers_footers": 25.00,
+          "arxiv_math": 20.83,
+          "old_scans": 0.00,
+          "old_scans_math": 1.69
+        }
+      },
+      "ppv6_cascade_096": {
+        "escalated_pct": 31.67,
+        "escalated_items": "1240/3915",
+        "mean_seconds_per_page": 10.67,
+        "median_seconds_per_page": 7.77,
+        "ppv6_mean_seconds": 3.78,
+        "passed": 66,
+        "total": 188,
+        "pass_rate_pct": 35.11,
+        "by_category_pct": {
+          "long_tiny_text": 92.59,
+          "multi_column": 92.31,
+          "table_tests": 76.00,
+          "headers_footers": 25.00,
+          "arxiv_math": 20.83,
+          "old_scans": 0.00,
+          "old_scans_math": 1.69
+        }
+      },
+      "ppv6_full_100": {
+        "escalated_pct": 100.0,
+        "escalated_items": "3915/3915",
+        "mean_seconds_per_page": 20.23,
+        "median_seconds_per_page": 16.40,
+        "ppv6_mean_seconds": 13.30,
+        "passed": 66,
+        "total": 188,
+        "pass_rate_pct": 35.11,
+        "by_category_pct": {
+          "long_tiny_text": 88.89,
+          "multi_column": 92.31,
+          "table_tests": 76.00,
+          "headers_footers": 31.25,
+          "arxiv_math": 20.83,
+          "old_scans": 0.00,
+          "old_scans_math": 1.69
+        }
+      }
+    }
+  }
+}
