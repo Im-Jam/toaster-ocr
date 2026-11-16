@@ -140,8 +140,8 @@ class ToasterOCR:
             raise ValueError(f"Unknown mode {mode!r}; expected one of {MODES}")
         use_ppv6 = mode in ("pp-v6", "pp-v6-full")
         thr = 1.0 if mode == "pp-v6-full" else (DEFAULT_PPV6_CONF_THRESHOLD if ppv6_threshold is None else float(ppv6_threshold))
-        # Default: pp-v6 gates PPv3+SLANet on Indra seeing a Table; indra-pp & pp-v6-full always run layout.
-        gate_tables = (mode == "pp-v6") if table_gate is None else bool(table_gate)
+        # Default: both indra-pp (table-switch) and pp-v6 (2-switch) gate PPv3+SLANet on Indra seeing a Table.
+        gate_tables = (mode in ("indra-pp", "pp-v6")) if table_gate is None else bool(table_gate)
 
         with self.lock, tempfile.TemporaryDirectory(prefix="toaster-ocr-") as td:
             t0 = time.monotonic()

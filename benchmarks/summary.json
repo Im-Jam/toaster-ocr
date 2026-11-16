@@ -21,6 +21,19 @@
         "table_teds_structure_only": 0.6023,
         "display_formula_norm_ed": 0.7498
       },
+      "indra_pp_table_switch": {
+        "escalated_pct": 0.0,
+        "layout_pages_pct": 72.0,
+        "mean_seconds_per_page": 5.94,
+        "median_seconds_per_page": 6.24,
+        "p90_seconds_per_page": 9.00,
+        "ppv6_mean_seconds": 0.0,
+        "text_block_ed_page_avg": 0.1317,
+        "text_block_ed_whole": 0.1687,
+        "reading_order_ed_page_avg": 0.2722,
+        "table_teds": 0.6177,
+        "table_teds_structure_only": 0.7736
+      },
       "indra_pp_slanet": {
         "escalated_pct": 0.0,
         "mean_seconds_per_page": 7.00,
@@ -101,6 +114,16 @@
           "old_scans": 4.17,
           "old_scans_math": 1.69
         }
+      },
+      "indra_pp_table_switch": {
+        "escalated_pct": 0.0,
+        "layout_pages_pct": 37.5,
+        "mean_seconds_per_page": 4.12,
+        "median_seconds_per_page": 3.31,
+        "p90_seconds_per_page": 8.09,
+        "passed": 67,
+        "total": 188,
+        "pass_rate_pct": 35.64
       },
       "indra_pp_slanet": {
         "escalated_pct": 0.0,
