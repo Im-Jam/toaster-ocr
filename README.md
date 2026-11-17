@@ -46,7 +46,12 @@ Measured on CPUs `0,1` (`taskset -c 0,1 nice -n 10`, 2 intra-op threads, serial 
 
 ## 2. Where Small CPU Cascades Excel vs. Where They Hit a Wall (`olmOCR-bench OLM24`)
 
-In addition to table boxes, `PP-DocLayout` detects `header`, `footer`, `header_image`, `footer_image`, and `number` (page-number) boxes. Stripping non-table lines inside those furniture regions (enabled by default; disable with `--keep-furniture`) lifts **`headers_footers` from `31.3%` (`5/16`) to `68.8%` (`11/16`) with `DocLayout-S` (`3.18 s/page`) and `100.0%` (`16/16`) with `Always-on + DocLayoutV3` (`6.55 s/page`)**, bringing all four modern printed PDF categories to **`76.0%–100.0%` pass rates**.
+**Uniform win from `PP-DocLayout` furniture stripping (now the standard default):** In addition to table boxes, `PP-DocLayout` predicts `header`, `footer`, `header_image`, `footer_image`, and `number` (page-number) boxes. Stripping non-table lines inside those furniture regions (enabled by default; disable with `--keep-furniture`) is a **strictly uniform improvement across every detector (`S`, `M`, `L`, `V3`) and both benchmarks with zero regressions across all 124 held-out pages**:
+- **`OLM24` `headers_footers`:** jumps from **`31.3%` (`5/16`) → `68.8%` (`11/16`) with `DocLayout-S` (`3.18 s/page`, `2.59 s` median, `38.8%` overall)** and **`100.0%` (`16/16`) with `Always-on + DocLayoutV3` (`6.55 s/page`, `42.0%` overall)**.
+- **`OLM24` `1-switch + DocLayoutV3`:** jumps from **`35.6%` → `38.8%` (`67 → 73/188`) at zero extra latency (`4.00 s/page`, `3.31 s` median)**.
+- **`OLM24` modern printed PDF categories:** all four (`headers_footers`, `multi_column`, `long_tiny_text`, `table_tests`) reach **`76.0%–100.0%` pass rates**.
+- **`NEW100`:** preserves exact `Table TEDS` (`0.6177` / `0.6333`), `Text ED` (`0.1317`), and `Order ED` (`0.2722`) with zero regressions.
+- When `--layout-model s` is selected, `toaster-ocr` automatically runs the `411 ms` `DocLayout-S` pass on every page to strip running headers/footers while still gating `SLANet` table reconstruction on `has_indra_table`.
 
 Meanwhile, on 19th-century cursive handwriting (`old_scans` `12.5%`, `old_scans_math` `1.7%`) and heavy arXiv equations (`arxiv_math` `20.8%`), small line-OCR + `MathReader` hit a hard ceiling — making difficult arXiv math and degraded scans our next R&D target:
 
