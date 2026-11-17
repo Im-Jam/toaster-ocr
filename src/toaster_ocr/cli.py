@@ -8,7 +8,7 @@ import sys
 
 from .download import download_models
 from .paths import MODEL_SPECS
-from .pipeline import MODES, ToasterOCR
+from .pipeline import LAYOUT_MODELS, MODES, ToasterOCR
 from .server import serve
 
 
@@ -21,7 +21,8 @@ def main(argv: list[str] | None = None) -> int:
 
     rn = sub.add_parser("run", help="Run OCR on a local image and print markdown or JSON")
     rn.add_argument("image", help="Input PNG/JPEG/WebP path")
-    rn.add_argument("--mode", choices=MODES, default="pp-v6")
+    rn.add_argument("--mode", choices=MODES, default="indra-pp")
+    rn.add_argument("--layout-model", choices=LAYOUT_MODELS, default="v3", help="Table detector: v3 (33.3M), l (30.9M), m (5.7M), or s (1.2M)")
     rn.add_argument("--no-math", action="store_true", help="Disable Indra LaTeX math reader")
     rn.add_argument("--ppv6-threshold", type=float, default=None, help="Confidence threshold (default 0.96, 1.0=all lines)")
     rn.add_argument("--always-layout", action="store_true", help="Run PP-DocLayoutV3+SLANet even if Indra sees no Table")
@@ -40,7 +41,7 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({k: str(v) for k, v in res.items()}, indent=2))
         return 0
     if args.cmd == "run":
-        ocr = ToasterOCR(threads=args.threads)
+        ocr = ToasterOCR(threads=args.threads, layout_model=args.layout_model)
         try:
             res = ocr.run_image(
                 args.image,

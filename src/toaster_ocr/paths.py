@@ -23,6 +23,24 @@ MODEL_SPECS = {
         "subdir": "ppv3",
         "env": "TOASTER_OCR_PPV3_DIR",
     },
+    "doclayout-s": {
+        "repo_id": "PaddlePaddle/PP-DocLayout-S",
+        "revision": "8ac289e66598f9106822f1f1bdbe1e956760c537",
+        "subdir": "doclayout-s",
+        "env": "TOASTER_OCR_DOCLAYOUT_S_DIR",
+    },
+    "doclayout-m": {
+        "repo_id": "PaddlePaddle/PP-DocLayout-M",
+        "revision": "7dbfcce315e15c67acbb4fd263560b16aa6bdbe7",
+        "subdir": "doclayout-m",
+        "env": "TOASTER_OCR_DOCLAYOUT_M_DIR",
+    },
+    "doclayout-l": {
+        "repo_id": "PaddlePaddle/PP-DocLayout-L",
+        "revision": "ca760c33368fd02dc3061f5217caabff83db9283",
+        "subdir": "doclayout-l",
+        "env": "TOASTER_OCR_DOCLAYOUT_L_DIR",
+    },
     "slanet": {
         "repo_id": "dimtri009/SLANet-1M",
         "revision": "a8ea21bf31cebc0f04909ede8517e3029c32f19b",

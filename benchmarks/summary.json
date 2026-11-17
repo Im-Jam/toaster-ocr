@@ -34,6 +34,60 @@
         "table_teds": 0.6177,
         "table_teds_structure_only": 0.7736
       },
+      "doclayout_s_1switch": {
+        "detector_mean_seconds": 0.411,
+        "detector_median_seconds": 0.361,
+        "layout_pages_pct": 72.0,
+        "mean_seconds_per_page": 3.44,
+        "median_seconds_per_page": 3.05,
+        "p90_seconds_per_page": 5.47,
+        "text_block_ed_page_avg": 0.1321,
+        "reading_order_ed_page_avg": 0.2839,
+        "table_teds": 0.5747,
+        "table_teds_structure_only": 0.7491
+      },
+      "doclayout_s_always": {
+        "detector_mean_seconds": 0.411,
+        "mean_seconds_per_page": 3.58,
+        "median_seconds_per_page": 3.12,
+        "text_block_ed_page_avg": 0.1411,
+        "reading_order_ed_page_avg": 0.2941,
+        "table_teds": 0.5799,
+        "table_teds_structure_only": 0.7543
+      },
+      "doclayout_m_1switch": {
+        "detector_mean_seconds": 1.224,
+        "detector_median_seconds": 1.172,
+        "layout_pages_pct": 72.0,
+        "mean_seconds_per_page": 4.06,
+        "median_seconds_per_page": 3.71,
+        "p90_seconds_per_page": 6.37,
+        "text_block_ed_page_avg": 0.1489,
+        "reading_order_ed_page_avg": 0.2898,
+        "table_teds": 0.5663,
+        "table_teds_structure_only": 0.7399
+      },
+      "doclayout_l_1switch": {
+        "detector_mean_seconds": 2.923,
+        "detector_median_seconds": 2.880,
+        "layout_pages_pct": 72.0,
+        "mean_seconds_per_page": 5.29,
+        "median_seconds_per_page": 5.49,
+        "p90_seconds_per_page": 8.01,
+        "text_block_ed_page_avg": 0.1321,
+        "reading_order_ed_page_avg": 0.2479,
+        "table_teds": 0.6006,
+        "table_teds_structure_only": 0.7625
+      },
+      "doclayout_l_always": {
+        "detector_mean_seconds": 2.923,
+        "mean_seconds_per_page": 6.12,
+        "median_seconds_per_page": 5.67,
+        "text_block_ed_page_avg": 0.1321,
+        "reading_order_ed_page_avg": 0.2479,
+        "table_teds": 0.6058,
+        "table_teds_structure_only": 0.7677
+      },
       "indra_pp_slanet": {
         "escalated_pct": 0.0,
         "mean_seconds_per_page": 7.00,

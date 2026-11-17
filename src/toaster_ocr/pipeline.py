@@ -12,10 +12,11 @@ from pathlib import Path
 from typing import Any
 
 from .indra_engine import DEFAULT_PPV6_CONF_THRESHOLD, IndraEngine
-from .ppv3_layout import PPDocLayoutV3Detector, regroup
+from .ppv3_layout import PPDocLayoutV3Detector, PaddleDocLayoutDetector, regroup
 from .slanet_tables import SLANetTables
 
 MODES = ("indra", "indra-pp", "pp-v6", "pp-v6-full")
+LAYOUT_MODELS = ("v3", "l", "m", "s")
 
 
 class _JsonWorker:
@@ -99,11 +100,14 @@ for line in sys.stdin:
 class ToasterOCR:
     """Lazy-loading orchestrator for CPU-first small OCR specialist modes."""
 
-    def __init__(self, threads: int = 2):
+    def __init__(self, threads: int = 2, layout_model: str = "v3"):
+        if layout_model not in LAYOUT_MODELS:
+            raise ValueError(f"Unknown layout_model {layout_model!r}; expected one of {LAYOUT_MODELS}")
         self.threads = threads
+        self.layout_model = layout_model
         self.lock = threading.Lock()
         self._indra: IndraEngine | None = None
-        self._ppv3: PPDocLayoutV3Detector | _JsonWorker | None = None
+        self._ppv3: PPDocLayoutV3Detector | PaddleDocLayoutDetector | _JsonWorker | None = None
         self._slanet: SLANetTables | _JsonWorker | None = None
 
     def _get_indra(self) -> IndraEngine:
@@ -113,8 +117,11 @@ class ToasterOCR:
 
     def _detect_ppv3(self, image_path: str, width: int, height: int) -> dict[str, Any]:
         if self._ppv3 is None:
-            py = os.environ.get("TOASTER_OCR_PPV3_PYTHON")
-            self._ppv3 = _JsonWorker(py, _PPV3_WORKER_CODE, self.threads) if py else PPDocLayoutV3Detector(threads=self.threads)
+            if self.layout_model == "v3":
+                py = os.environ.get("TOASTER_OCR_PPV3_PYTHON")
+                self._ppv3 = _JsonWorker(py, _PPV3_WORKER_CODE, self.threads) if py else PPDocLayoutV3Detector(threads=self.threads)
+            else:
+                self._ppv3 = PaddleDocLayoutDetector(variant=self.layout_model, threads=self.threads)
         if isinstance(self._ppv3, _JsonWorker):
             return self._ppv3.call({"image_path": image_path, "width": width, "height": height})
         return self._ppv3.detect(image_path, width, height)

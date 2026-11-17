@@ -276,3 +276,94 @@ class PPDocLayoutV3Detector:
                 }
             )
         return {"regions": regions, "inference_seconds": time.monotonic() - t0}
+
+
+class PaddleDocLayoutDetector:
+    """CPU detector wrapper for PaddlePaddle/PP-DocLayout-{S,M,L} via paddle.inference."""
+
+    def __init__(self, variant: str = "s", model_path: Path | None = None, threads: int = 2):
+        import cv2
+        import paddle.inference as pi
+        import yaml
+
+        v = variant.lower()
+        if v not in ("s", "m", "l"):
+            raise ValueError(f"Unknown PP-DocLayout variant {variant!r}; expected s, m, or l")
+        key = f"doclayout-{v}"
+        base = Path(model_path) if model_path else model_dir(key)
+        if not (base / "inference.json").exists():
+            raise FileNotFoundError(
+                f"PP-DocLayout-{v.upper()} missing in {base}. Run 'toaster-ocr download {key}'."
+            )
+        cv2.setNumThreads(1)
+        self.cv2 = cv2
+        yml = yaml.safe_load((base / "inference.yml").read_text())
+        self.labels = yml["label_list"]
+        self.th, self.tw = yml["Preprocess"][0]["target_size"]
+        norm = yml["Preprocess"][1]
+        self.mean = np.array(norm.get("mean", [0.0, 0.0, 0.0]), dtype=np.float32)
+        self.std = np.array(norm.get("std", [1.0, 1.0, 1.0]), dtype=np.float32)
+
+        t0 = time.monotonic()
+        cfg = pi.Config(str(base / "inference.json"), str(base / "inference.pdiparams"))
+        cfg.disable_gpu()
+        cfg.set_cpu_math_library_num_threads(threads)
+        cfg.switch_ir_optim(False)
+        cfg.disable_glog_info()
+        self.pred = pi.create_predictor(cfg)
+        self.load_seconds = time.monotonic() - t0
+
+    def detect(self, image_path: str | Path, width: int, height: int) -> dict[str, Any]:
+        t0 = time.monotonic()
+        bgr = self.cv2.imread(str(image_path))
+        if bgr is None:
+            raise ValueError(f"Could not read image: {image_path}")
+        rgb = bgr[:, :, ::-1]
+        h_img, w_img = rgb.shape[:2]
+        if (w_img, h_img) != (width, height):
+            raise ValueError(f"Dimension mismatch: image={(w_img, h_img)} vs expected={(width, height)}")
+        rs = (
+            self.cv2.resize(rgb, (self.tw, self.th), interpolation=self.cv2.INTER_CUBIC).astype(np.float32) / 255.0
+            - self.mean
+        ) / self.std
+        inp = rs.transpose(2, 0, 1)[None]
+        sf = np.array([[self.th / float(h_img), self.tw / float(w_img)]], dtype=np.float32)
+        for name in self.pred.get_input_names():
+            h = self.pred.get_input_handle(name)
+            if name == "image":
+                h.reshape(inp.shape)
+                h.copy_from_cpu(inp)
+            elif name == "scale_factor":
+                h.reshape(sf.shape)
+                h.copy_from_cpu(sf)
+            elif name == "im_shape":
+                ims = np.array([[float(self.th), float(self.tw)]], dtype=np.float32)
+                h.reshape(ims.shape)
+                h.copy_from_cpu(ims)
+        self.pred.run()
+        boxes = self.pred.get_output_handle(self.pred.get_output_names()[0]).copy_to_cpu()
+        regions = []
+        for i, b in enumerate(boxes):
+            cid = int(b[0])
+            score = float(b[1])
+            if cid < 0 or score < 0.5:
+                continue
+            box = [
+                max(0.0, min(float(w_img), float(b[2]))),
+                max(0.0, min(float(h_img), float(b[3]))),
+                max(0.0, min(float(w_img), float(b[4]))),
+                max(0.0, min(float(h_img), float(b[5]))),
+            ]
+            if not _valid_box(box):
+                continue
+            regions.append(
+                {
+                    "box_xyxy": box,
+                    "score": score,
+                    "label_id": cid,
+                    "raw_label": self.labels[cid],
+                    "order_seq": i,
+                    "service_order": i,
+                }
+            )
+        return {"regions": regions, "inference_seconds": time.monotonic() - t0}
