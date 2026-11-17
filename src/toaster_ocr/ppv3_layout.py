@@ -4,6 +4,7 @@ from __future__ import annotations
 import copy
 import html
 import math
+import re
 import time
 from collections import defaultdict
 from pathlib import Path
@@ -71,6 +72,53 @@ def _atoms(page):
 
 
 FURNITURE_LABELS = frozenset({"header", "footer", "header_image", "footer_image", "number"})
+
+
+def clean_math_markdown(md: str) -> str:
+    """Fix LaTeX delimiter parity and trailing sentence punctuation inside $...$ / $$...$$."""
+    if not md or "$" not in md:
+        return md
+    out_lines = []
+    for line in md.splitlines():
+        if "$" not in line or line.strip().startswith("<table"):
+            out_lines.append(line)
+            continue
+        tmp = line.replace("$$", "")
+        if tmp.count("$") % 2 == 1:
+            idx = line.rfind("$")
+            line = line[:idx] + line[idx + 1 :]
+        line = re.sub(
+            r"\$([^$]+?(?:=|\+|-|\\leq|\\geq|\\neq|\\approx|\\in|\\subset|\\subseteq|\\to|\\times)\s*)\$\s+\$([^$]+?)\$",
+            r"$\1 \2$",
+            line,
+        )
+        if line.lstrip().startswith("$") and line.rstrip().endswith("$"):
+            line = re.sub(r"\$\s+(for|if|where|with)\s+\$", r" \\text{ \1 } ", line)
+
+        def _strip_punct_dd(m):
+            body = m.group(1).rstrip()
+            if body.endswith("..."):
+                return m.group(0)
+            m_p = re.search(r"(\s*[.,;:]+)\s*$", body)
+            if m_p:
+                punct = m_p.group(1).strip()
+                return f"$${body[:m_p.start()].rstrip()}$${punct}"
+            return m.group(0)
+
+        def _strip_punct_d(m):
+            body = m.group(1).rstrip()
+            if body.endswith("..."):
+                return m.group(0)
+            m_p = re.search(r"(\s*[.,;:]+)\s*$", body)
+            if m_p:
+                punct = m_p.group(1).strip()
+                return f"${body[:m_p.start()].rstrip()}${punct}"
+            return m.group(0)
+
+        line = re.sub(r"\$\$(.+?)\$\$", _strip_punct_dd, line)
+        line = re.sub(r"(?<!\$)\$(?!\$)(.+?)(?<!\$)\$(?!\$)", _strip_punct_d, line)
+        out_lines.append(line)
+    return "\n".join(out_lines)
 
 
 def regroup(

@@ -1,6 +1,6 @@
 import unittest
 
-from toaster_ocr.ppv3_layout import regroup
+from toaster_ocr.ppv3_layout import clean_math_markdown, regroup
 from toaster_ocr.slanet_tables import assign_and_render, is_sparse_grid_explosion, padding_for
 
 
@@ -73,6 +73,14 @@ class TestRegroupAndRepair(unittest.TestCase):
         self.assertEqual(diag["stripped_furniture_atoms"], 1)
         self.assertNotIn("Running Header", reg["markdown"])
         self.assertIn("Body text stays", reg["markdown"])
+
+    def test_clean_math_markdown_fixes_punctuation_and_parity(self):
+        raw = "## Diagram $p\nWe have $x = 1 ,$ and\n$$a + b = c .$$\nAlso $u ( x ) =$ $v ( x ) .$"
+        cleaned = clean_math_markdown(raw)
+        self.assertEqual(
+            cleaned,
+            "## Diagram p\nWe have $x = 1$, and\n$$a + b = c$$.\nAlso $u ( x ) = v ( x )$.",
+        )
 
     def test_padding_and_nearest_missing_and_sparse_gate(self):
         frags = [

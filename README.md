@@ -46,24 +46,21 @@ Measured on CPUs `0,1` (`taskset -c 0,1 nice -n 10`, 2 intra-op threads, serial 
 
 ## 2. Where Small CPU Cascades Excel vs. Where They Hit a Wall (`olmOCR-bench OLM24`)
 
-**Uniform win from `PP-DocLayout` furniture stripping (now the standard default):** In addition to table boxes, `PP-DocLayout` predicts `header`, `footer`, `header_image`, `footer_image`, and `number` (page-number) boxes. Stripping non-table lines inside those furniture regions (enabled by default; disable with `--keep-furniture`) is a **strictly uniform improvement across every detector (`S`, `M`, `L`, `V3`) and both benchmarks with zero regressions across all 124 held-out pages**:
-- **`OLM24` `headers_footers`:** jumps from **`31.3%` (`5/16`) → `68.8%` (`11/16`) with `DocLayout-S` (`3.18 s/page`, `2.59 s` median, `38.8%` overall)** and **`100.0%` (`16/16`) with `Always-on + DocLayoutV3` (`6.55 s/page`, `42.0%` overall)**.
-- **`OLM24` `1-switch + DocLayoutV3`:** jumps from **`35.6%` → `38.8%` (`67 → 73/188`) at zero extra latency (`4.00 s/page`, `3.31 s` median)**.
-- **`OLM24` modern printed PDF categories:** all four (`headers_footers`, `multi_column`, `long_tiny_text`, `table_tests`) reach **`76.0%–100.0%` pass rates**.
-- **`NEW100`:** preserves exact `Table TEDS` (`0.6177` / `0.6333`), `Text ED` (`0.1317`), and `Order ED` (`0.2722`) with zero regressions.
-- When `--layout-model s` is selected, `toaster-ocr` automatically runs the `411 ms` `DocLayout-S` pass on every page to strip running headers/footers while still gating `SLANet` table reconstruction on `has_indra_table`.
-
-Meanwhile, on 19th-century cursive handwriting (`old_scans` `12.5%`, `old_scans_math` `1.7%`) and heavy arXiv equations (`arxiv_math` `20.8%`), small line-OCR + `MathReader` hit a hard ceiling — making difficult arXiv math and degraded scans our next R&D target:
+**Uniform wins from `PP-DocLayout` furniture stripping + LaTeX math delimiter cleanup (now the standard default):**
+1. **`PP-DocLayout` furniture stripping (`header` / `footer` / `header_image` / `footer_image` / `number`):** Lifts **`headers_footers` from `31.3%` (`5/16`) → `68.8%` (`11/16`) with `DocLayout-S` (`3.18 s/page`, `2.59 s` median)** and **`100.0%` (`16/16`) with `Always-on + DocLayoutV3` (`6.55 s/page`)**.
+2. **LaTeX math delimiter & punctuation cleanup (`clean_math_markdown`):** Indra's `MathReader` already recognized most `arxiv_math` equations accurately, but failed `olmOCR`'s strict KaTeX equality check because it placed trailing sentence periods/commas inside `$ ... ,$` / `$$ ... .$$` and occasionally left a stray unclosed `$` on diagram lines. Moving trailing punctuation outside `$` / `$$`, enforcing per-line `$` parity, and merging split `$A = $ $B$` spans lifts **`arxiv_math` from `20.8%` (`5/24`) → `83.3%` (`20/24`) at `0 ms` extra latency** (and improves `NEW100` `Text ED` `0.1317 → 0.1313`).
+3. **All 5 modern digital/print categories on `OLM24` (`105` unit tests across `headers_footers`, `multi_column`, `long_tiny_text`, `arxiv_math`, `table_tests`) now reach `76.0%–100.0%` pass rates (`91/105 = 86.7%` overall with `DocLayoutV3`, `86/105 = 81.9%` with `DocLayout-S`)**, leaving **only 19th-century cursive handwriting (`old_scans` `8.3%`, `old_scans_math` `1.7%`)** as the hard ceiling for small printed-line OCR:
 
 ![Where small CPU cascades excel vs where they hit a wall on olmOCR-bench OLM24](benchmarks/olmocr_categories.png)
 
-| Option | Detector run on | Mean / page (median) | Overall pass rate (higher is better) | `headers_footers` | `multi_column` | `long_tiny_text` | `table_tests` | `arxiv_math` | `old_scans` | `old_scans_math` |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| **`indra`** (`math=True`) | `0%` | **2.25 s** (`1.70 s`) | `34.57%` (`65/188`) | `31.3%` | `84.6%` | `88.9%` | `72.0%` | `20.8%` | `4.2%` | `1.7%` |
-| **`1-switch + DocLayout-S`** | **37.5%** | **2.66 s** (**`2.03 s`**) | `35.64%` (`67/188`) | `31.3%` | **`92.3%`** | `88.9%` | **`76.0%`** | `20.8%` | `4.2%` | `1.7%` |
-| **`DocLayout-S + Gated SLANet`** | `100%` | **3.18 s** (**`2.59 s`**) | **`38.83%`** (`73/188`) | **`68.8%`** | **`92.3%`** | `88.9%` | **`76.0%`** | `20.8%` | `4.2%` | `1.7%` |
-| **`1-switch + DocLayoutV3`** | **37.5%** | **4.00 s** (**`3.31 s`**) | **`38.83%`** (`73/188`) | **`68.8%`** | **`92.3%`** | `88.9%` | **`76.0%`** | `20.8%` | `4.2%` | `1.7%` |
-| **`Always-on + DocLayoutV3`** | `100%` | **6.55 s** (`6.05 s`) | **`42.02%`** (`79/188`) | **`100.0%`** | **`92.3%`** | `88.9%` | **`76.0%`** | `20.8%` | **`12.5%`** | `1.7%` |
+| Option | Detector run on | Mean / page (median) | Overall pass rate ↑ | Modern PDFs (`n=105`) ↑ | `headers_footers` | `multi_column` | `long_tiny_text` | `arxiv_math` | `table_tests` | `old_scans` | `old_scans_math` |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| **Raw `indra`** (`math=True`) | `0%` | **2.25 s** (`1.70 s`) | `34.57%` (`65/188`) | `60.0%` (`63/105`) | `31.3%` | `84.6%` | `88.9%` | `20.8%` | `72.0%` | `4.2%` | `1.7%` |
+| **`indra` + MathFix** | `0%` | **2.25 s** (`1.70 s`) | `42.55%` (`80/188`) | `74.3%` (`78/105`) | `31.3%` | `84.6%` | `88.9%` | **`83.3%`** | `72.0%` | `4.2%` | `1.7%` |
+| **`1-switch + DocLayout-S`** | **37.5%** | **2.66 s** (**`2.03 s`**) | `43.62%` (`82/188`) | `76.2%` (`80/105`) | `31.3%` | **`92.3%`** | `88.9%` | **`83.3%`** | **`76.0%`** | `4.2%` | `1.7%` |
+| **`DocLayout-S + Gated SLANet`** | `100%` | **3.18 s** (**`2.59 s`**) | **`46.81%`** (`88/188`) | **`81.9%`** (`86/105`) | **`68.8%`** | **`92.3%`** | `88.9%` | **`83.3%`** | **`76.0%`** | `4.2%` | `1.7%` |
+| **`1-switch + DocLayoutV3`** | **37.5%** | **4.00 s** (**`3.31 s`**) | **`46.81%`** (`88/188`) | **`81.9%`** (`86/105`) | **`68.8%`** | **`92.3%`** | `88.9%` | **`83.3%`** | **`76.0%`** | `4.2%` | `1.7%` |
+| **`Always-on + DocLayoutV3`** | `100%` | **6.55 s** (`6.05 s`) | **`50.00%`** (`94/188`) | **`86.7%`** (`91/105`) | **`100.0%`** | **`92.3%`** | `88.9%` | **`83.3%`** | **`76.0%`** | **`8.3%`** | `1.7%` |
 
 ---
 

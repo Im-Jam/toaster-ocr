@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from .indra_engine import DEFAULT_PPV6_CONF_THRESHOLD, IndraEngine
-from .ppv3_layout import PPDocLayoutV3Detector, PaddleDocLayoutDetector, regroup
+from .ppv3_layout import PPDocLayoutV3Detector, PaddleDocLayoutDetector, clean_math_markdown, regroup
 from .slanet_tables import SLANetTables
 
 MODES = ("indra", "indra-pp", "pp-v6", "pp-v6-full")
@@ -170,7 +170,7 @@ class ToasterOCR:
                 or (gate_tables and not has_indra_table and not run_layout_for_furniture)
             ):
                 return {
-                    "markdown": native["markdown"],
+                    "markdown": clean_math_markdown(native["markdown"]),
                     "parts_count": len(native.get("parts", [])),
                     "tables_attempted": 0,
                     "tables_replaced": 0,
@@ -209,7 +209,7 @@ class ToasterOCR:
                 slanet_s = 0.0
 
             return {
-                "markdown": md,
+                "markdown": clean_math_markdown(md),
                 "parts_count": len(regrouped.get("parts", [])),
                 "tables_attempted": attempted,
                 "tables_replaced": replaced,
