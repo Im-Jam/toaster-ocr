@@ -7,7 +7,7 @@ dist/
 models/
 .env
 *.png
-!benchmarks/pareto.png
+!benchmarks/*.png
 *.jpg
 *.jpeg
 *.pdf
