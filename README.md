@@ -46,16 +46,19 @@ Measured on CPUs `0,1` (`taskset -c 0,1 nice -n 10`, 2 intra-op threads, serial 
 
 ## 2. Where Small CPU Cascades Excel vs. Where They Hit a Wall (`olmOCR-bench OLM24`)
 
-On modern digital/printed PDFs (`multi_column`, `long_tiny_text`, `table_tests`), the 2-core CPU cascade achieves **`76.0%–92.3%` pass rates**. On 19th-century cursive handwriting (`old_scans` `4.2%`, `old_scans_math` `1.7%`) and heavy arXiv equations (`arxiv_math` `20.8%`), small line-OCR + `MathReader` hit a hard ceiling — making difficult arXiv math and degraded scans our next R&D target:
+In addition to table boxes, `PP-DocLayout` detects `header`, `footer`, `header_image`, `footer_image`, and `number` (page-number) boxes. Stripping non-table lines inside those furniture regions (enabled by default; disable with `--keep-furniture`) lifts **`headers_footers` from `31.3%` (`5/16`) to `68.8%` (`11/16`) with `DocLayout-S` (`3.18 s/page`) and `100.0%` (`16/16`) with `Always-on + DocLayoutV3` (`6.55 s/page`)**, bringing all four modern printed PDF categories to **`76.0%–100.0%` pass rates**.
+
+Meanwhile, on 19th-century cursive handwriting (`old_scans` `12.5%`, `old_scans_math` `1.7%`) and heavy arXiv equations (`arxiv_math` `20.8%`), small line-OCR + `MathReader` hit a hard ceiling — making difficult arXiv math and degraded scans our next R&D target:
 
 ![Where small CPU cascades excel vs where they hit a wall on olmOCR-bench OLM24](benchmarks/olmocr_categories.png)
 
-| Option | Layout run on | Mean / page (median) | Overall pass rate (higher is better) | `long_tiny_text` | `multi_column` | `table_tests` | `headers_footers` | `arxiv_math` | `old_scans` | `old_scans_math` |
+| Option | Detector run on | Mean / page (median) | Overall pass rate (higher is better) | `headers_footers` | `multi_column` | `long_tiny_text` | `table_tests` | `arxiv_math` | `old_scans` | `old_scans_math` |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| **`indra`** (`math=True`) | `0%` | **2.25 s** (`1.70 s`) | `34.57%` (`65/188`) | `88.9%` | `84.6%` | `72.0%` | `31.3%` | `20.8%` | `4.2%` | `1.7%` |
-| **`1-switch + DocLayoutV3`** | **37.5%** | **4.12 s** (**`3.31 s`**) | **`35.64%`** (`67/188`) | `88.9%` | **`92.3%`** | **`76.0%`** | `31.3%` | `20.8%` | `4.2%` | `1.7%` |
-| **`Always-on + DocLayoutV3`** | `100%` | **6.68 s** (`5.95 s`) | **`35.64%`** (`67/188`) | `88.9%` | **`92.3%`** | **`76.0%`** | `31.3%` | `20.8%` | `4.2%` | `1.7%` |
-| **`2-switch (V3 + PP-OCRv6)`** | **37.5%** | **7.05 s** (`5.85 s`) | `35.11%` (`66/188`) | `85.2%` | **`92.3%`** | **`76.0%`** | `31.3%` | `20.8%` | `4.2%` | `1.7%` |
+| **`indra`** (`math=True`) | `0%` | **2.25 s** (`1.70 s`) | `34.57%` (`65/188`) | `31.3%` | `84.6%` | `88.9%` | `72.0%` | `20.8%` | `4.2%` | `1.7%` |
+| **`1-switch + DocLayout-S`** | **37.5%** | **2.66 s** (**`2.03 s`**) | `35.64%` (`67/188`) | `31.3%` | **`92.3%`** | `88.9%` | **`76.0%`** | `20.8%` | `4.2%` | `1.7%` |
+| **`DocLayout-S + Gated SLANet`** | `100%` | **3.18 s** (**`2.59 s`**) | **`38.83%`** (`73/188`) | **`68.8%`** | **`92.3%`** | `88.9%` | **`76.0%`** | `20.8%` | `4.2%` | `1.7%` |
+| **`1-switch + DocLayoutV3`** | **37.5%** | **4.00 s** (**`3.31 s`**) | **`38.83%`** (`73/188`) | **`68.8%`** | **`92.3%`** | `88.9%` | **`76.0%`** | `20.8%` | `4.2%` | `1.7%` |
+| **`Always-on + DocLayoutV3`** | `100%` | **6.55 s** (`6.05 s`) | **`42.02%`** (`79/188`) | **`100.0%`** | **`92.3%`** | `88.9%` | **`76.0%`** | `20.8%` | **`12.5%`** | `1.7%` |
 
 ---
 

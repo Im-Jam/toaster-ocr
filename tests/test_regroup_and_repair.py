@@ -45,6 +45,35 @@ class TestRegroupAndRepair(unittest.TestCase):
         self.assertIn("ColB", out["markdown"])
         self.assertIn("Header note", out["markdown"])
 
+    def test_regroup_strips_furniture_when_enabled(self):
+        native = {
+            "width": 1000,
+            "height": 1000,
+            "parts": [
+                {
+                    "id": "p0",
+                    "label": "Text",
+                    "bbox": [50, 20, 400, 230],
+                    "markdown": "Running Header\nBody text stays",
+                    "line_ids": [1, 2],
+                    "lines": [
+                        {"id": 1, "text": "Running Header", "box": [50, 20, 400, 40]},
+                        {"id": 2, "text": "Body text stays", "box": [50, 200, 400, 230]},
+                    ],
+                    "cells": [
+                        {"id": "c0", "line_id": 1, "text": "Running Header", "box": [50, 20, 400, 40]},
+                        {"id": "c1", "line_id": 2, "text": "Body text stays", "box": [50, 200, 400, 230]},
+                    ],
+                },
+            ],
+            "markdown": "Running Header\nBody text stays",
+        }
+        regions = [{"box_xyxy": [40.0, 10.0, 450.0, 50.0], "score": 0.9, "label_id": 13, "raw_label": "header", "order_seq": 0}]
+        reg, diag = regroup(native, regions, mode="tables_only", strip_furniture=True)
+        self.assertEqual(diag["stripped_furniture_atoms"], 1)
+        self.assertNotIn("Running Header", reg["markdown"])
+        self.assertIn("Body text stays", reg["markdown"])
+
     def test_padding_and_nearest_missing_and_sparse_gate(self):
         frags = [
             {"text": "A", "bbox": [10, 10, 40, 30]},

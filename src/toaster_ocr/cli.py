@@ -25,7 +25,8 @@ def main(argv: list[str] | None = None) -> int:
     rn.add_argument("--layout-model", choices=LAYOUT_MODELS, default="v3", help="Table detector: v3 (33.3M), l (30.9M), m (5.7M), or s (1.2M)")
     rn.add_argument("--no-math", action="store_true", help="Disable Indra LaTeX math reader")
     rn.add_argument("--ppv6-threshold", type=float, default=None, help="Confidence threshold (default 0.96, 1.0=all lines)")
-    rn.add_argument("--always-layout", action="store_true", help="Run PP-DocLayoutV3+SLANet even if Indra sees no Table")
+    rn.add_argument("--always-layout", action="store_true", help="Run PP-DocLayout+SLANet even if Indra sees no Table")
+    rn.add_argument("--keep-furniture", action="store_true", help="Keep page headers, footers, and page numbers detected by PP-DocLayout")
     rn.add_argument("--threads", type=int, default=2)
     rn.add_argument("--json", action="store_true", help="Emit full JSON with timings")
 
@@ -49,6 +50,7 @@ def main(argv: list[str] | None = None) -> int:
                 math=not args.no_math,
                 ppv6_threshold=args.ppv6_threshold,
                 table_gate=(False if args.always_layout else None),
+                keep_furniture=args.keep_furniture,
             )
         finally:
             ocr.close()

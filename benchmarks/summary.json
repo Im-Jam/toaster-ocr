@@ -172,27 +172,61 @@
       "indra_pp_table_switch": {
         "escalated_pct": 0.0,
         "layout_pages_pct": 37.5,
-        "mean_seconds_per_page": 4.12,
+        "mean_seconds_per_page": 4.00,
         "median_seconds_per_page": 3.31,
         "p90_seconds_per_page": 8.09,
-        "passed": 67,
+        "passed": 73,
         "total": 188,
-        "pass_rate_pct": 35.64
-      },
-      "indra_pp_slanet": {
-        "escalated_pct": 0.0,
-        "mean_seconds_per_page": 6.68,
-        "median_seconds_per_page": 5.95,
-        "passed": 67,
-        "total": 188,
-        "pass_rate_pct": 35.64,
+        "pass_rate_pct": 38.83,
         "by_category_pct": {
           "long_tiny_text": 88.89,
           "multi_column": 92.31,
           "table_tests": 76.00,
-          "headers_footers": 31.25,
+          "headers_footers": 68.75,
           "arxiv_math": 20.83,
           "old_scans": 4.17,
+          "old_scans_math": 1.69
+        }
+      },
+      "doclayout_s_1switch": {
+        "layout_pages_pct": 37.5,
+        "mean_seconds_per_page": 2.66,
+        "median_seconds_per_page": 2.03,
+        "passed": 67,
+        "total": 188,
+        "pass_rate_pct": 35.64
+      },
+      "doclayout_s_furniture_gated_slanet": {
+        "layout_pages_pct": 100.0,
+        "mean_seconds_per_page": 3.18,
+        "median_seconds_per_page": 2.59,
+        "passed": 73,
+        "total": 188,
+        "pass_rate_pct": 38.83,
+        "by_category_pct": {
+          "long_tiny_text": 88.89,
+          "multi_column": 92.31,
+          "table_tests": 76.00,
+          "headers_footers": 68.75,
+          "arxiv_math": 20.83,
+          "old_scans": 4.17,
+          "old_scans_math": 1.69
+        }
+      },
+      "indra_pp_slanet": {
+        "escalated_pct": 0.0,
+        "mean_seconds_per_page": 6.55,
+        "median_seconds_per_page": 6.05,
+        "passed": 79,
+        "total": 188,
+        "pass_rate_pct": 42.02,
+        "by_category_pct": {
+          "long_tiny_text": 88.89,
+          "multi_column": 92.31,
+          "table_tests": 76.00,
+          "headers_footers": 100.00,
+          "arxiv_math": 20.83,
+          "old_scans": 12.50,
           "old_scans_math": 1.69
         }
       },

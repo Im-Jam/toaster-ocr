@@ -70,8 +70,17 @@ def _atoms(page):
     return atoms
 
 
-def regroup(native: dict[str, Any], regions: list[dict[str, Any]], mode: str = "tables_only", min_ioa: float = 0.5):
-    """Regroup native Indra cell atoms into PP-DocLayoutV3 table regions without dropping text."""
+FURNITURE_LABELS = frozenset({"header", "footer", "header_image", "footer_image", "number"})
+
+
+def regroup(
+    native: dict[str, Any],
+    regions: list[dict[str, Any]],
+    mode: str = "tables_only",
+    min_ioa: float = 0.5,
+    strip_furniture: bool = True,
+):
+    """Regroup native Indra cell atoms into PP-DocLayoutV3 table regions and optionally strip page furniture."""
     if mode not in ("tables_only", "layout_first", "native_geometry"):
         raise ValueError("mode must be tables_only, layout_first, or native_geometry")
     page = copy.deepcopy(native)
@@ -80,6 +89,7 @@ def regroup(native: dict[str, Any], regions: list[dict[str, Any]], mode: str = "
         "fallback": None,
         "table_regions": 0,
         "reconstructed_tables": 0,
+        "stripped_furniture_atoms": 0,
     }
     try:
         try:
@@ -159,21 +169,39 @@ def regroup(native: dict[str, Any], regions: list[dict[str, Any]], mode: str = "
             }
             rendered.append((region.get("order_seq", 10**9), ri, p))
         diagnostics["reconstructed_tables"] = len(rendered)
-        if not rendered and mode == "tables_only":
+
+        furniture_keys: set[str] = set()
+        if strip_furniture:
+            fboxes = [b for _, r, b in regs if r.get("raw_label") in FURNITURE_LABELS]
+            if fboxes:
+                for pi, part in enumerate(source_parts):
+                    if part.get("label") == "Table":
+                        continue
+                    for a in atoms:
+                        if a["part_index"] != pi or a["key"] in consumed:
+                            continue
+                        bx = a["box"]
+                        cx, cy = 0.5 * (bx[0] + bx[2]), 0.5 * (bx[1] + bx[3])
+                        if any(fx0 <= cx <= fx1 and fy0 <= cy <= fy1 for fx0, fy0, fx1, fy1 in fboxes):
+                            furniture_keys.add(a["key"])
+        diagnostics["stripped_furniture_atoms"] = len(furniture_keys)
+
+        if not rendered and not furniture_keys and mode == "tables_only":
             diagnostics["fallback"] = "no_table_atoms_assigned"
             return page, diagnostics
 
+        removed = consumed | furniture_keys
         rebuilt = []
         for pi, part in enumerate(source_parts):
             part_atoms = [a for a in atoms if a["part_index"] == pi]
-            taken = [a for a in part_atoms if a["key"] in consumed]
+            taken = [a for a in part_atoms if a["key"] in removed]
             if not taken:
                 untouched = copy.deepcopy(part)
                 for a in part_atoms:
                     untouched["cells"][a["cell_index"]]["source_atom_key"] = a["key"]
                 rebuilt.append(((pi, 0, 0), untouched))
                 continue
-            remaining = [a for a in part_atoms if a["key"] not in consumed]
+            remaining = [a for a in part_atoms if a["key"] not in removed]
             if remaining:
                 residual = copy.deepcopy(part)
                 residual["cells"] = []

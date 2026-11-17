@@ -142,6 +142,7 @@ class ToasterOCR:
         math: bool = True,
         ppv6_threshold: float | None = None,
         table_gate: bool | None = None,
+        keep_furniture: bool = False,
     ) -> dict[str, Any]:
         if mode not in MODES:
             raise ValueError(f"Unknown mode {mode!r}; expected one of {MODES}")
@@ -179,7 +180,12 @@ class ToasterOCR:
 
             ppv3 = self._detect_ppv3(native["image_path"], native["width"], native["height"])
             t_regroup = time.monotonic()
-            regrouped, diag = regroup(native, ppv3["regions"], mode="tables_only")
+            regrouped, diag = regroup(
+                native,
+                ppv3["regions"],
+                mode="tables_only",
+                strip_furniture=not keep_furniture,
+            )
             regroup_s = time.monotonic() - t_regroup
             has_tables = any(p.get("label") == "Table" for p in regrouped.get("parts", []))
             if has_tables:
