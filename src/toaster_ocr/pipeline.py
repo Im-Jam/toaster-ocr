@@ -162,7 +162,13 @@ class ToasterOCR:
                 ppv6_threshold=thr,
             )
             has_indra_table = any(p.get("label") == "Table" for p in native.get("parts", []))
-            if mode == "indra" or native.get("vertical") or not native.get("parts") or (gate_tables and not has_indra_table):
+            run_layout_for_furniture = (self.layout_model == "s" and not keep_furniture and mode != "indra")
+            if (
+                mode == "indra"
+                or native.get("vertical")
+                or not native.get("parts")
+                or (gate_tables and not has_indra_table and not run_layout_for_furniture)
+            ):
                 return {
                     "markdown": native["markdown"],
                     "parts_count": len(native.get("parts", [])),
@@ -180,14 +186,16 @@ class ToasterOCR:
 
             ppv3 = self._detect_ppv3(native["image_path"], native["width"], native["height"])
             t_regroup = time.monotonic()
+            allow_table_regroup = (not gate_tables) or has_indra_table
             regrouped, diag = regroup(
                 native,
                 ppv3["regions"],
                 mode="tables_only",
                 strip_furniture=not keep_furniture,
+                reconstruct_tables=allow_table_regroup,
             )
             regroup_s = time.monotonic() - t_regroup
-            has_tables = any(p.get("label") == "Table" for p in regrouped.get("parts", []))
+            has_tables = allow_table_regroup and any(p.get("label") == "Table" for p in regrouped.get("parts", []))
             if has_tables:
                 repaired = self._repair_slanet(native["image_path"], regrouped)
                 md = repaired["markdown"]

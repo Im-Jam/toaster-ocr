@@ -79,6 +79,7 @@ def regroup(
     mode: str = "tables_only",
     min_ioa: float = 0.5,
     strip_furniture: bool = True,
+    reconstruct_tables: bool = True,
 ):
     """Regroup native Indra cell atoms into PP-DocLayoutV3 table regions and optionally strip page furniture."""
     if mode not in ("tables_only", "layout_first", "native_geometry"):
@@ -119,7 +120,7 @@ def regroup(
             if not _valid_box(box) or box[0] < 0 or box[1] < 0 or box[2] > width or box[3] > height:
                 raise ValueError(f"invalid/out-of-page region box {ri}")
             regs.append((ri, region, list(map(float, box))))
-        table_regs = [(i, r, b) for i, r, b in regs if r.get("raw_label") == "table"]
+        table_regs = [(i, r, b) for i, r, b in regs if r.get("raw_label") == "table"] if reconstruct_tables else []
         diagnostics["table_regions"] = len(table_regs)
         if not regs:
             diagnostics["fallback"] = "no_regions"
