@@ -35,13 +35,13 @@ Measured on **2 ARM64 CPU cores** (`taskset -c 0,1 nice -n 10`). **Errors / 1k c
 | **`Indra` + `PP-OCRv6_small` (`<=0.95 & >5ch`, no layout)** | `3.09 s` | `166.2` | `29.9` | `501.7` | **`33.1`** | `431` |
 | **`Indra` + `PP-OCRv6_small` (`<=0.96 & >5ch`, no layout)** | `3.42 s` | `166.1` | `29.8` | `501.6` | **`33.1`** | `431` |
 | **`Indra` + `PP-OCRv6_small` (`Always-on 100%`, no layout)** | `16.83 s` | `165.5` | `29.3` | `502.5` | **`33.1`** | `431` |
-| **`Indra` + `SVTRv2-T` (`Always-on`, EN-only, no layout)** | `—` (`102 ms/line`) | `—` | `—` | `—` | **`13.2`** | `431` |
-| **`Indra` + `SVTRv2-S` (`Always-on`, EN-only, no layout)** | `—` (`191 ms/line`) | `—` | `—` | `—` | **`7.8`** | `431` |
+| **`Indra` + `SVTRv2-T` (`Always-on`, EN word-only, no layout)** | `—` (`102 ms/line`) | `—` *(no spaces)* | `—` | `—` | **`13.2`** | `431` |
+| **`Indra` + `SVTRv2-S` (`Always-on`, EN word-only, no layout)** | `—` (`191 ms/line`) | `—` *(no spaces)* | `—` | `—` | **`7.8`** | `431` |
 | **`2-switch` (`DocLayout-S` + `SLANet` + `PP-OCRv6 <=0.96`)** | **`6.13 s`** | **`163.4`** | `29.9` | **`495.6`** | **`33.1`** | `579` (`+148`) |
 | **`2-switch` (`DocLayout-L` + `SLANet` + `PP-OCRv6 <=0.96`)** | `7.98 s` | `164.1` | `30.2` | `497.4` | **`33.1`** | `603` (`+172`) |
 | **`2-switch` (`DocLayoutV3` + `SLANet` + `PP-OCRv6 <=0.96`)** | `8.85 s` | `164.5` | **`29.3`** | `496.6` | **`33.1`** | **`621`** (`+190`) |
 
-*(Note: `SVTRv2-T` `5.13M` and `SVTRv2-S` `11.25M` are English/ASCII-only and were measured on the `300`-word `100–120 DPI` degraded-print set rather than bilingual `NEW100`.)*
+*(Note: `SVTRv2-T` `5.13M` and `SVTRv2-S` `11.25M` are `Union14M` word-level models that do not output spaces on full document lines — tested on `NEW100` English they scored `526.2` / `513.9` errors/1k due to missing spaces — so they are only usable on single cropped words like the `300`-word `100–120 DPI` set.)*
 
 ---
 
