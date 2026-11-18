@@ -17,6 +17,38 @@ Indra is already fast on CPU (~1.9 s/page on 2 ARM64 cores) and handles prose, r
 
 ---
 
+## Quick Benchmark Summary (Human-Readable)
+
+Measured on **2 ARM64 CPU cores** (`taskset -c 0,1 nice -n 10`). **Errors / 1k chars** is total character errors per 1,000 ground-truth characters (**lower is better**); **Table TEDS / 1k** is table structure + cell accuracy out of 1,000 (**higher is better**).
+
+### A. Full Document Pages (`NEW100`: 100 unseen pages = 69 Clean + 22 Difficult + 9 Table-only)
+
+| Configuration | Seconds / Page ↓ | Overall Errors / 1k ↓ | Clean Pages Errors / 1k ↓ | Difficult Pages Errors / 1k ↓ | Table TEDS / 1k ↑ |
+|---|---:|---:|---:|---:|---:|
+| **`Indra` (baseline)** | **`1.91 s`** | `170.0` | `31.4` | `509.7` | `431` |
+| **`Indra` + `DocLayout-S` + `SLANet` (`1-switch`)** | **`3.44 s`** | `168.7` | `31.4` | `505.5` | **`575`** (`+144`) |
+| **`Indra` + `DocLayout-M` + `SLANet` (`1-switch`)** | `4.06 s` | `171.4` | `34.6` | `506.9` | `566` (`+135`) |
+| **`Indra` + `DocLayout-L` + `SLANet` (`1-switch`)** | `5.29 s` | `169.0` | `31.3` | `506.8` | **`601`** (`+170`) |
+| **`Indra` + `DocLayoutV3` + `SLANet` (`Always-on`)** | `7.00 s` | `168.7` | `30.9` | `506.6` | **`633`** (`+202`) |
+| **`Indra` + `PP-OCRv6_small` (`<=0.95 & >5ch`, no layout)** | `3.09 s` | `166.2` | `29.9` | `501.7` | `431` |
+| **`Indra` + `PP-OCRv6_small` (`<=0.96 & >5ch`, no layout)** | `3.42 s` | `166.1` | `29.8` | `501.6` | `431` |
+| **`Indra` + `PP-OCRv6_small` (`100%`, no layout)** | `16.83 s` | `165.5` | `29.3` | `502.5` | `431` |
+| **`2-switch` (`DocLayout-S` + `SLANet` + `PP-OCRv6 <=0.96`)** | **`6.13 s`** | **`163.4`** | `29.9` | **`495.6`** | `579` (`+148`) |
+| **`2-switch` (`DocLayout-L` + `SLANet` + `PP-OCRv6 <=0.96`)** | `7.98 s` | `164.1` | `30.2` | `497.4` | `603` (`+172`) |
+| **`2-switch` (`DocLayoutV3` + `SLANet` + `PP-OCRv6 <=0.96`)** | `8.85 s` | `164.5` | **`29.3`** | `496.6` | **`621`** (`+190`) |
+
+### B. Degraded Printed Words Only (`300` vintage-degraded words, `100–120 DPI` + ink erosion)
+*(Isolates pure character-recognition rescue on blurry/broken print without layout or missing-block errors.)*
+
+| Model | Params | 2-Core CPU Speed (`W=128/160` / `W=320`) | Word Accuracy ↑ | Errors / 1k Chars ↓ | Chars Saved / 1k vs. `Indra` |
+|---|---:|---:|---:|---:|---:|
+| **`Indra`** (`FP32`) | `1.25M` | ~`12–19 ms/line` | `58.3%` | `83.9` | `0.0` (baseline) |
+| **`PP-OCRv6_small`** (0-shot `FP32`) | `~9.2M` CTC | **`21.3 ms`** / **`40.3 ms`** | `92.0%` | `33.1` | `+50.8` |
+| **`SVTRv2-T`** (0-shot, English-only) | `5.13M` | `38.1 ms` / `102.2 ms` | `91.7%` | **`13.2`** | **`+70.7`** |
+| **`SVTRv2-S`** (0-shot, English-only) | `11.25M` | `72.2 ms` / `190.6 ms` | **`94.7%`** | **`7.8`** | **`+76.1`** |
+
+---
+
 ## 1. Local 2-Core CPU Cascade Benchmarks (`NEW100` & `OLM24`)
 
 Measured on CPUs `0,1` (`taskset -c 0,1 nice -n 10`, 2 intra-op threads, serial execution, `math=True` across all options). Both benchmarks are completely disjoint held-out sets. Raw metrics JSON: [`benchmarks/summary.json`](benchmarks/summary.json).
