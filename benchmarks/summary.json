@@ -288,5 +288,34 @@
         }
       }
     }
+  },
+  "degraded_print_and_quantization": {
+    "notes": "Measured locally on 2 ARM64 CPU cores (intra_op_num_threads=2). Degraded print benchmark uses 300 synthetic vintage-degraded words (100-120 DPI downsampling, Gaussian blur, ink erosion, salt/pepper speckle). TextZoom LR splits were evaluated on Modal A10G.",
+    "vintage_degraded_300_words": {
+      "indra_rec_fp32": {"exact_acc_pct": 58.3, "ci_acc_pct": 59.3},
+      "ppocrv6_small_fp32_zeroshot": {"exact_acc_pct": 92.0, "ci_acc_pct": 92.0, "onnx_mb": 20.2, "ms_per_word": 21.9},
+      "ppocrv6_small_dyn_int8": {"exact_acc_pct": 36.0, "onnx_mb": 5.3, "ms_per_word": 16.2},
+      "ppocrv6_small_static_int8": {"exact_acc_pct": 61.3, "onnx_mb": 5.2, "ms_per_word": 17.7},
+      "ppocrv6_small_textzoom_ft_fp32": {"exact_acc_pct": 71.3, "onnx_mb": 20.3, "ms_per_word": 22.4},
+      "svtrv2_s_textzoom_ft_fp32": {"exact_acc_pct": 89.3, "ci_acc_pct": 89.3, "onnx_mb": 43.1, "ms_per_word": 73.6}
+    },
+    "textzoom_lr_heldout": {
+      "svtrv2_s_zeroshot": {"easy_pct": 85.03, "medium_pct": 66.05, "hard_pct": 51.60},
+      "svtrv2_s_finetuned": {"easy_pct": 86.27, "medium_pct": 72.79, "hard_pct": 57.33},
+      "ppocrv6_small_zeroshot": {"easy_pct": 73.10, "medium_pct": 46.92, "hard_pct": 36.49},
+      "ppocrv6_small_finetuned": {"easy_pct": 75.70, "medium_pct": 57.19, "hard_pct": 41.92}
+    },
+    "ppocrv6_small_cpu_profile_1x3x48x320_ms": {
+      "total_ms": 44.17,
+      "conv_and_fused_conv_ms": 31.87,
+      "gelu_ms": 5.09,
+      "matmul_and_18711_head_ms": 3.48,
+      "add_mul_concat_pool_ms": 2.06,
+      "softmax_ms": 0.80
+    },
+    "full_page_rec_speed_2cores_ms": {
+      "olm24_3_pg101_34_lines": {"indra_rec_ms": 401, "ppocrv6_small_ms": 3588, "ratio": 8.94},
+      "olm24_2503_09455_pg21_37_lines": {"indra_rec_ms": 698, "ppocrv6_small_ms": 4148, "ratio": 5.94}
+    }
   }
 }

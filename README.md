@@ -115,6 +115,20 @@ How does a `< 50M` parameter CPU-only stack compare against GPU pipelines (`Mark
 
 ---
 
+## 4. Second-Pass Recognizer Ablation (`PP-OCRv6_small` vs. `SVTRv2-S` vs. `INT8`)
+
+Why `toaster-ocr` keeps **official `FP32` `PP-OCRv6_small`** behind `Indra`'s confidence gate (`conf <= 0.96`) instead of running it on every line or quantizing to `INT8`:
+
+- **Degraded print accuracy (`300` vintage-degraded words, `100–120 DPI` + ink erosion/speckle):**
+  - `Indra` (`1.25M`, `FP32`): `58.3%`
+  - **`PP-OCRv6_small` (official `FP32`, `20.2 MB`, `21.9 ms/word` on 2 ARM64 cores):** **`92.0%`** (**`+33.7` pts**)
+  - `SVTRv2-S` (fine-tuned `TextZoom` + Degraded Print, `11.25M`, `43.1 MB`, `73.6 ms/word`): **`89.3%`** (`+31.0` pts)
+- **Full-page CPU speed (`2` ARM64 cores):** `PP-OCRv6_small` takes `3.59–4.15 s` for `34–37` lines vs. `0.40–0.70 s` for `Indra` (`6–9×` slower), so gating on `conf <= 0.96` preserves `Indra`'s speed on clean lines while rescuing degraded lines.
+- **Why not `INT8` or vocabulary pruning:** Post-training `Dynamic INT8` (`16.2 ms/word`) and `Static INT8` (`17.7 ms/word`) only speed up `PP-OCRv6_small` by `1.24–1.35×` on 2 ARM64 cores (memory-bandwidth bound `PPLCNetV4` depthwise convs) while collapsing degraded-print accuracy from **`92.0%` → `36.0%` / `61.3%`**. Node-level profiling (`44.17 ms` per `48×320` line) also shows **`83.6%`** of CPU time is spent in `Conv` (`72.1%`) + `GELU` (`11.5%`), with only `~6.9%` (`3.0 ms`) in the `18,711`-class CJK+EN head.
+- **Why not `TextZoom` fine-tuning for document `PP-OCRv6`:** Fine-tuning `PP-OCRv6_small` on `TextZoom` LR + degraded print improved `TextZoom` (`medium 46.9% → 57.2%`, `hard 36.5% → 41.9%`), **but** degraded sharp document-print accuracy (`92.0% → 71.3%`) by overwriting clean typographic priors.
+
+---
+
 ## Quickstart
 
 ### 1. Install
