@@ -115,6 +115,42 @@
         "table_teds_structure_only": 0.7736,
         "display_formula_norm_ed": 0.7311
       },
+      "ppv6_2switch_s": {
+        "escalated_pct": 17.79,
+        "layout_pages_pct": 72.0,
+        "mean_seconds_per_page": 9.04,
+        "median_seconds_per_page": 6.78,
+        "p90_seconds_per_page": 14.69,
+        "text_block_ed_page_avg": 0.1377,
+        "text_block_ed_whole": 0.1634,
+        "reading_order_ed_page_avg": 0.2930,
+        "table_teds": 0.5787,
+        "table_teds_structure_only": 0.7491
+      },
+      "ppv6_2switch_m": {
+        "escalated_pct": 17.79,
+        "layout_pages_pct": 72.0,
+        "mean_seconds_per_page": 9.63,
+        "median_seconds_per_page": 7.19,
+        "p90_seconds_per_page": 14.68,
+        "text_block_ed_page_avg": 0.1415,
+        "text_block_ed_whole": 0.1661,
+        "reading_order_ed_page_avg": 0.2934,
+        "table_teds": 0.5702,
+        "table_teds_structure_only": 0.7399
+      },
+      "ppv6_2switch_l": {
+        "escalated_pct": 17.79,
+        "layout_pages_pct": 72.0,
+        "mean_seconds_per_page": 10.89,
+        "median_seconds_per_page": 8.48,
+        "p90_seconds_per_page": 16.58,
+        "text_block_ed_page_avg": 0.1320,
+        "text_block_ed_whole": 0.1641,
+        "reading_order_ed_page_avg": 0.2565,
+        "table_teds": 0.6034,
+        "table_teds_structure_only": 0.7625
+      },
       "ppv6_cascade_096": {
         "escalated_pct": 17.79,
         "escalated_items": "4297/24156",
