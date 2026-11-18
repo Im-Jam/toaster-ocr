@@ -352,6 +352,15 @@
     "full_page_rec_speed_2cores_ms": {
       "olm24_3_pg101_34_lines": {"indra_rec_ms": 401, "ppocrv6_small_ms": 3588, "ratio": 8.94},
       "olm24_2503_09455_pg21_37_lines": {"indra_rec_ms": 698, "ppocrv6_small_ms": 4148, "ratio": 5.94}
+    },
+    "ppv6_threshold_sweep_new100_nontable_lines": {
+      "0.85": {"escalated_pct": 8.75, "est_ppv6_mean_s": 0.77, "text_ed_page_avg": 0.1309, "text_ed_whole": 0.1670},
+      "0.88": {"escalated_pct": 9.67, "est_ppv6_mean_s": 0.95, "text_ed_page_avg": 0.1308, "text_ed_whole": 0.1670},
+      "0.90": {"escalated_pct": 10.61, "est_ppv6_mean_s": 1.04, "text_ed_page_avg": 0.1302, "text_ed_whole": 0.1667},
+      "0.92": {"escalated_pct": 12.09, "est_ppv6_mean_s": 1.18, "text_ed_page_avg": 0.1290, "text_ed_whole": 0.1666},
+      "0.94": {"escalated_pct": 14.19, "est_ppv6_mean_s": 1.54, "text_ed_page_avg": 0.1282, "text_ed_whole": 0.1662},
+      "0.96": {"escalated_pct": 18.85, "est_ppv6_mean_s": 2.20, "text_ed_page_avg": 0.1268, "text_ed_whole": 0.1656},
+      "1.00": {"escalated_pct": 100.00, "est_ppv6_mean_s": 14.92, "text_ed_page_avg": 0.1252, "text_ed_whole": 0.1655}
     }
   }
 }
