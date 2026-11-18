@@ -31,6 +31,7 @@ Measured on **2 ARM64 CPU cores** (`taskset -c 0,1 nice -n 10`). **Errors / 1k c
 | **`Indra` + `DocLayout-L` + `SLANet` (`1-switch`)** | `5.29 s` | `169.0` | `31.3` | `506.8` | `83.9` | **`601`** (`+170`) |
 | **`Indra` + `DocLayoutV3` + `SLANet` (`1-switch`)** | `5.94 s` | `168.7` | `30.9` | `506.6` | `83.9` | **`618`** (`+187`) |
 | **`Indra` + `DocLayoutV3` + `SLANet` (`Always-on`)** | `7.00 s` | `168.7` | `30.9` | `506.6` | `83.9` | **`633`** (`+202`) |
+| **`Indra` + `PP-OCRv6_tiny` (`Always-on 100%`, no layout)** | `2.59 s` | `172.7` | `38.4` | `504.8` | `60.0` | `431` |
 | **`Indra` + `PP-OCRv6_small` (`<=0.95 & >5ch`, no layout)** | `3.09 s` | `166.2` | `29.9` | `501.7` | **`33.1`** | `431` |
 | **`Indra` + `PP-OCRv6_small` (`<=0.96 & >5ch`, no layout)** | `3.42 s` | `166.1` | `29.8` | `501.6` | **`33.1`** | `431` |
 | **`Indra` + `PP-OCRv6_small` (`Always-on 100%`, no layout)** | `16.83 s` | `165.5` | `29.3` | `502.5` | **`33.1`** | `431` |
