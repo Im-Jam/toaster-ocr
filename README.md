@@ -41,7 +41,7 @@ Measured on **2 ARM64 CPU cores** (`taskset -c 0,1 nice -n 10`). **Errors / 1k c
 | **`2-switch` (`DocLayout-L` + `SLANet` + `PP-OCRv6 <=0.96`)** | `7.98 s` | `164.1` | `30.2` | `497.4` | **`33.1`** | `603` (`+172`) |
 | **`2-switch` (`DocLayoutV3` + `SLANet` + `PP-OCRv6 <=0.96`)** | `8.85 s` | `164.5` | **`29.3`** | `496.6` | **`33.1`** | **`621`** (`+190`) |
 
-*(Note: `SVTRv2-T` `5.13M` and `SVTRv2-S` `11.25M` are `Union14M` word-level models that do not output spaces on full document lines — tested on `NEW100` English they scored `526.2` / `513.9` errors/1k due to missing spaces — so they are only usable on single cropped words like the `300`-word `100–120 DPI` set.)*
+*(Note: `SVTRv2-T` `5.13M` and `SVTRv2-S` `11.25M` are `Union14M` word-level models that drop spaces on full lines (`526.2` / `513.9` errors/1k). Even when paired fairly via `Indra` word-box splitting (`gated <= 0.96 & > 5ch`) on `NEW100` English (`50` pages; `Indra` EN baseline `158.2` overall / `32.3` clean / `554.4` hard), `Indra + SVTRv2-T` scored `159.0` (`32.3` / `559.9`) and `Indra + SVTRv2-S` scored `159.2` (`32.6` / `560.0`) — so they only beat `Indra` on genuinely degraded `100–120 DPI` word crops (`13.2` / `7.8` vs `83.9` errors/1k). `PP-OCRv6_tiny` and `PP-OCRv6_small` are full-line models.)*
 
 ---
 
