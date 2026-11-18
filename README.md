@@ -35,8 +35,10 @@ Measured on **2 ARM64 CPU cores** (`taskset -c 0,1 nice -n 10`). **Errors / 1k c
 | **`Indra` + `PP-OCRv6_small` (`<=0.95 & >5ch`, no layout)** | `3.09 s` | `166.2` | `29.9` | `501.7` | **`33.1`** | `431` |
 | **`Indra` + `PP-OCRv6_small` (`<=0.96 & >5ch`, no layout)** | `3.42 s` | `166.1` | `29.8` | `501.6` | **`33.1`** | `431` |
 | **`Indra` + `PP-OCRv6_small` (`Always-on 100%`, no layout)** | `16.83 s` | `165.5` | `29.3` | `502.5` | **`33.1`** | `431` |
-| **`Indra` + `SVTRv2-T` (`Always-on`, EN word-only, no layout)** | `—` (`102 ms/line`) | `—` *(no spaces)* | `—` | `—` | **`13.2`** | `431` |
-| **`Indra` + `SVTRv2-S` (`Always-on`, EN word-only, no layout)** | `—` (`191 ms/line`) | `—` *(no spaces)* | `—` | `—` | **`7.8`** | `431` |
+| **`PP-OCRv6_tiny` (`standalone`, no layout/grouping)** | **`1.63 s`** | `615.5` | `574.8` | `725.4` | `60.0` | `—` |
+| **`PP-OCRv6_small` (`standalone`, no layout/grouping)** | `7.66 s` | `654.8` | `620.5` | `743.0` | **`33.1`** | `—` |
+| **`Indra` + `SVTRv2-T` (`<=0.96 & >5ch`, EN word-split)** | `—` (`38–102 ms/w`) | `159.0` *(EN-50)* | `32.3` *(EN)* | `559.9` *(EN)* | **`13.2`** | `431` |
+| **`Indra` + `SVTRv2-S` (`<=0.96 & >5ch`, EN word-split)** | `—` (`72–191 ms/w`) | `159.2` *(EN-50)* | `32.6` *(EN)* | `560.0` *(EN)* | **`7.8`** | `431` |
 | **`2-switch` (`DocLayout-S` + `SLANet` + `PP-OCRv6 <=0.96`)** | **`6.13 s`** | **`163.4`** | `29.9` | **`495.6`** | **`33.1`** | `579` (`+148`) |
 | **`2-switch` (`DocLayout-L` + `SLANet` + `PP-OCRv6 <=0.96`)** | `7.98 s` | `164.1` | `30.2` | `497.4` | **`33.1`** | `603` (`+172`) |
 | **`2-switch` (`DocLayoutV3` + `SLANet` + `PP-OCRv6 <=0.96`)** | `8.85 s` | `164.5` | **`29.3`** | `496.6` | **`33.1`** | **`621`** (`+190`) |
