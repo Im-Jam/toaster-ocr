@@ -18,6 +18,7 @@ from indra_ocr.rtl import has_rtl
 from .paths import model_dir
 
 DEFAULT_PPV6_CONF_THRESHOLD = 0.96
+DEFAULT_PPV6_MIN_CHARS = 5
 
 
 def _box(b) -> list[float]:
@@ -49,6 +50,8 @@ def should_escalate_line(text: str, conf: float, threshold: float) -> bool:
         return False
     if threshold >= 1.0:
         return True
+    if len(text.strip()) <= DEFAULT_PPV6_MIN_CHARS:
+        return False
     return conf <= threshold
 
 

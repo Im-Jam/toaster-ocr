@@ -47,6 +47,9 @@ class TestConfidenceCascade(unittest.TestCase):
         self.assertEqual(DEFAULT_PPV6_CONF_THRESHOLD, 0.96)
         self.assertTrue(should_escalate_line("noisy line", 0.85, 0.96))
         self.assertTrue(should_escalate_line("borderline", 0.96, 0.96))
+        self.assertFalse(should_escalate_line("12345", 0.50, 0.96))
+        self.assertFalse(should_escalate_line("  (a) ", 0.50, 0.96))
+        self.assertTrue(should_escalate_line("12345", 0.50, 1.0))
         self.assertFalse(should_escalate_line("clean line", 0.985, 0.96))
         self.assertTrue(should_escalate_line("clean line", 0.999, 1.0))
 

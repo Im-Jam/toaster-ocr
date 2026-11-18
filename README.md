@@ -135,6 +135,7 @@ Why `toaster-ocr` keeps **official `FP32` `PP-OCRv6_small`** behind `Indra`'s co
   - `<= 0.92`: `12.09%` escalated (`+1.18 s/p`) → `0.1290` ED (`51%` of full gain — fast budget cutoff)
   - `<= 0.94`: `14.19%` escalated (`+1.54 s/p`) → `0.1282` ED (`61%` of full gain)
   - **`<= 0.96` (default):** `18.85%` escalated (`+2.20 s/p`) → **`0.1268` ED** (**`79%` of full gain** at `~1/7th` the `PP-OCRv6` cost)
+  - **`<= 0.96` + `len > 5` (now active in `should_escalate_line`):** `11.75%` escalated (`+1.51 s/p`, **`-38%` `PP-OCRv6` calls** by skipping `<= 5`-char bullets/numbers that were `68%` identical) → `0.1281` ED (`79%` of `0.96` gain)
   - `<= 1.00` (always): `100.0%` escalated (`+14.92 s/p`) → `0.1252` ED
 
 ---
