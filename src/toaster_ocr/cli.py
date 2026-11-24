@@ -8,22 +8,22 @@ from pathlib import Path
 
 from .download import download_models
 from .engine import ToasterOCR
-from .paths import MODEL_SPECS
+from .paths import DOWNLOAD_COMPONENTS
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="toaster-ocr", description="Pure-ONNX CPU document OCR")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
-    p_dl = sub.add_parser("download", help="Download pinned ONNX models and build KV-cached MFR decoders")
-    p_dl.add_argument("--only", nargs="*", choices=sorted(MODEL_SPECS.keys()), help="Specific components to fetch")
+    p_dl = sub.add_parser("download", help="Download pinned models and build QInt8 KV-cached MFR decoders")
+    p_dl.add_argument("--only", nargs="*", choices=list(DOWNLOAD_COMPONENTS), help="Specific components to fetch")
     p_dl.add_argument("--force", action="store_true", help="Re-download and rebuild even if cached")
 
     p_ocr = sub.add_parser("ocr", help="Run OCR on an image or PDF")
     p_ocr.add_argument("input", type=Path, help="Path to image (.png/.jpg/.webp) or .pdf")
     p_ocr.add_argument("-o", "--output", type=Path, help="Write Markdown output to file instead of stdout")
     p_ocr.add_argument("--threads", type=int, default=2, help="ONNX Runtime intra-op CPU threads (default: 2)")
-    p_ocr.add_argument("--baseline", action="store_true", help="Run stock Indra baseline without FastCPUStack upgrades")
+    p_ocr.add_argument("--baseline", action="store_true", help="Run stock LiteParse (OCRia-nano-1) without PP-DocLayout-S + KV-MFR")
     p_ocr.add_argument("--no-mfr", action="store_true", help="Disable PP-DocLayout-S + KV-MFR formula replacement")
     p_ocr.add_argument("--json", action="store_true", help="Emit JSON with markdown, pages, timing, and stats")
 

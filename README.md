@@ -1,59 +1,36 @@
 # toaster-ocr
 
-**Fast, pure-ONNX, CPU-only document OCR** — zero GPU, zero PyTorch, zero PaddlePaddle (`~129 MB` total ONNX footprint in `v0.2.1`).
+**Fast, pure-ONNX, CPU-only document OCR (`~95 MB` total weights)** — zero GPU, zero PyTorch, zero PaddlePaddle.
 
-`toaster-ocr` layers four targeted, pure-ONNX CPU upgrades on top of **[Indra OCR `1.1.2`](https://github.com/datalab-to/indra-ocr)** (`math=True`):
+`toaster-ocr` (`v0.3`) pairs **[LiteParse](https://github.com/run-llama/liteparse) (`OCRia-nano-1` + `LayoutNet`)** with our pure-ONNX display-math pipeline:
 
-1. **5-Fold-CV Table Ensemble (`SLANet-plus` 7.4 MB + `DeepDoc TSR` 12.2 MB + 100%-conserving `<br>` matcher):** Cross-validated router picks between `SLANet-plus`, `InfiniFlow/deepdoc` `tsr.onnx`, and native Indra with a sparse-grid fallback — lifting **OPB Tables from `59.60%` to `73.32%` (`+13.72 pts`, `+739` net tests)**, beating `DeepSeek-OCR-2`, `LightOnOCR-3-0.8B`, and `LightOnOCR-3-4B` on OPB Tables.
-2. **`PP-DocLayout-S` ONNX (4.7 MB, ~73 ms/page on 2 ARM64 cores) + Dynamic `QInt8` KV-Cached `pix2text-mfr-1.5`:** Splits `pix2text-mfr-1.5`'s uncached ONNX decoder locally into `mfr_dec_init.onnx` + `mfr_dec_step.onnx` (`9.6×` faster decode) and applies dynamic `QInt8` quantization (`119 MB → 34.3 MB`, `~1.7–2.0×` faster math pages). Uses a conservative `conf=0.35` formula threshold on clean born-digital PDF text layers and `conf=0.28` on scanned pages.
-3. **Page-Adaptive `lm.npz` Beam Search:** Only boosts Indra's 46 MB n-gram beam (`LM_GATE → 0.985`, `LM_BEAM → 16`) on pages whose median line confidence is `< 0.91`, fixing spacing/character slips on degraded pages with zero slowdown on clean pages.
-4. **PDF `textlayer.py` PUA/Ink Fix:** Stops rejecting valid born-digital PDF text layers that contain Private-Use-Area checkboxes (`Co`) or sparse lines.
+1. **`LiteParse` + `OCRia-nano-1` + `LayoutNet` (`55.8 MB`):** Native PDFium text-layer extraction (including inline `$math$`), `LayoutNet` grid/table reconstruction (`86.8%` on OPB `tables_derived`), and fast CPU OCR (`0.16–0.49s/page` on born-digital PDFs, `~1.0–1.4s/page` on scans).
+2. **`PP-DocLayout-S` ONNX (`4.7 MB`, ~73 ms/page on 2 ARM64 cores) + Dynamic `QInt8` KV-Cached `pix2text-mfr-1.5` (`34.3 MB`):** Adds dedicated 2D display-equation recognition (which `OCRia-nano-1` lacks), skipping any formula boxes inside `LayoutNet` tables and using a conservative `conf=0.35` threshold on clean PDF text layers vs `0.28` on scans.
 
 ---
 
-## Verified Benchmarks
+## Verified Benchmarks (`161` OPB Pages / `1,204` Official Unit Tests)
 
-### `v0.2.1` Math Speed & Size Update (96 OPB Math Pages, 796 Tests, 2-Core ARM64)
+Evaluated locally with `omni-parse-bench==1.7.1` across six challenging OPB suites (`tables_derived`, `olmo_old_scans_math`, `olmo_arxiv_math`, `olmo_table_tests`, `olmo_old_scans`, `realdoc_pages`):
 
-- **Model weights:** MFR drops **`119.2 MB → 34.3 MB`** (`-85 MB`); total stack drops **`~214 MB → ~129 MB`**.
-- **`olmo_old_scans_math` (36 pages / 450 tests):** FP32 `224/450` (`49.8%`, `459.5s` CPU) → **`QInt8` (`conf=0.28`) `230/450` (`51.1%`, `+6` tests, `270.5s` CPU — `1.70×` faster)**.
-- **`olmo_arxiv_math` (60 pages / 346 tests):** FP32 `262/346` (`75.7%`, `887.9s` CPU) → **`QInt8` (`conf=0.35` on text layers) `263/346` (`76.0%`, `+1` test, `437.3s` CPU — `2.03×` faster)**.
-- *(If upgrading from `v0.2.0`, re-run `toaster-ocr download --only pix2text_mfr15 --force` to rebuild the quantized MFR decoders.)*
+| Suite (`pages / tests`) | Stock `Indra 1.1.2` | `toaster-ocr v0.2` (`Indra` base) | Stock `OCRia-nano-1` | **`toaster-ocr v0.3`** |
+|---|---:|---:|---:|---:|
+| `tables_derived` (`30 / 325`) | `58.5%` | `67.7%` | **`86.8%`** | **`86.8%`** |
+| `olmo_old_scans_math` (`36 / 450`) | `13.8%` | `49.6%` | `13.8%` | **`59.8%`** |
+| `olmo_arxiv_math` (`25 / 129`) | `69.8%` | `78.3%` | `73.6%` | **`86.0%`** |
+| `olmo_table_tests` (`30 / 155`) | `74.2%` | **`74.8%`** | `74.2%` | `74.2%` |
+| `olmo_old_scans` (`20 / 65`) | **`43.1%`** | **`43.1%`** | `35.4%` | `35.4%` |
+| `realdoc_pages` (`20 / 80`) | **`88.8%`** | `87.5%` | `~77.5%` | `77.5%` |
+| **Total (`161 / 1,204`)** | `46.2%` (`556`) | `63.0%` (`758`) | `~53.1%` (`~639`) | **`71.6%` (`862`, `+8.6 pts` vs `v0.2`)** |
 
-### 1. Omni Parse Bench (Full 2,937 Pages / 16,288 Unit Tests, 0 Errors)
+### 2-Core ARM64 Speed (`taskset -c 0,1`)
 
-Evaluated with `omni-parse-bench==1.7.1` across all 22 suites (`1.21 s/page` median on 4 vCPUs; note Datalab is the maintainer of both `omni_parse_bench` and `indra-ocr`).
+- **Born-digital PDF (`--no-mfr` / text-only):** `0.16–0.45s/page` median
+- **Tables (`tables_derived`, `olmo_table_tests`):** `0.71–0.74s/page` median (`2–3×` faster than `v0.2`)
+- **Scanned forms / prose (`realdoc_pages`, `olmo_old_scans`):** `1.05–1.37s/page` median
+- **Dense display-math pages (`arxiv_math`, `old_scans_math`):** `5.33–6.94s/page` median (`QInt8` KV-MFR; pass `--no-mfr` for `0.17–1.30s/page`)
 
-| System | Hardware | OPB Headline ↑ | Text (8,499) ↑ | Tables (5,386) ↑ | Layout (2,403) ↑ |
-|---|---|---:|---:|---:|---:|
-| Stock `Indra OCR` (`1.1.2`) | CPU (ONNX) | `71.37%` | `62.55%` | `59.60%` | **`91.97%`** |
-| **`toaster-ocr` (`v0.2`)** | **CPU (ONNX)** | **`77.97%`** (**`+6.60 pts`**) | **`69.49%`** (**`+6.94 pts`**) | **`73.32%`** (**`+13.72 pts`**) | `91.09%` (`-0.87`) |
-| *Context: `DeepSeek-OCR-2`* | *GPU VLM* | *`75.43%`* | *`71.6%`* | *`68.1%`* | *`86.6%`* |
-| *Context: `LightOnOCR-3-0.8B`* | *GPU VLM* | *`81.9%`* | *`81.7%`* | *`72.2%`* | *`91.7%`* |
-
-- **Net test delta vs Stock Indra:** **`+1,308` net passing tests** (`1,707` wins / `399` losses; `15/22` suites improved, `3` tied, max single-suite regression `-3`).
-- **Top suite gains:** `tables_derived` `64.0% → 77.4%` (`+728`), `olmo_arxiv_math` `66.7% → 75.2%` (`+280`), `olmo_old_scans_math` `13.8% → 49.6%` (`+161`), `synth_copies` `70.2% → 74.4%` (`+80`), `olmo_table_tests` `69.9% → 74.2%` (`+31`).
-
-### 2. Independent Verification: AllenAI `olmOCR-bench` (1,403 PDFs / 7,019 Tests)
-
-Scored with official `olmocr==0.4.27` Playwright/KaTeX harness. Both runs used `furniture=True` (headers/footers kept, so `headers_footers` is apples-to-apples).
-
-| Suite | Stock `Indra OCR` | **`toaster-ocr` (`v0.2`)** | Delta |
-|---|---:|---:|---:|
-| `old_scans_math` (458) | `3.49%` | **`40.61%`** | **`+37.12 pts`** (`+170`) |
-| `arxiv_math` (2,927) | `55.93%` | **`66.72%`** | **`+10.79 pts`** (`+316`) |
-| `table_tests` (1,022) | `64.29%` | **`68.69%`** | **`+4.40 pts`** (`+45`) |
-| `multi_column` (884) | `72.62%` | **`73.08%`** | **`+0.46 pts`** (`+4`) |
-| `old_scans` (526) | `22.81%` | **`23.00%`** | `+0.19 pts` (`+1`) |
-| `headers_footers` (760) | `26.97%` | **`27.11%`** | `+0.14 pts` (`+1`) |
-| `long_tiny_text` (442) | **`76.70%`** | `76.02%` | `-0.68 pts` (`-3`) |
-| **Overall (macro avg)** | **`46.12%`** | **`53.60%`** | **`+7.48 pts`** |
-| **Micro total (7,019)** | `51.52%` (`3,616`) | **`59.13%` (`4,150`)** | **`+7.61 pts` (`+534` tests)** |
-
-### Where it excels vs. where CPU limits remain
-
-- **Strong on:** clean/scanned printed PDFs, multi-column layouts, complex tables (wired & borderless), born-digital PDFs, and display math (`LaTeX`).
-- **Still bounded on:** 19th-century cursive handwriting (`~18%` OPB), heavily degraded historical prose scans (`~31%` OPB), and non-Latin/multilingual scripts outside Indra's training distribution — those tasks need a GPU VLM (e.g., `LightOnOCR-3-0.8B` or `Qwen3-VL`).
+*(Note: `Indra`-based `v0.2.1` remains tagged in git history if you specifically need higher accuracy on Cyrillic/Korean/degraded historical non-math scans.)*
 
 ---
 
@@ -62,11 +39,14 @@ Scored with official `olmocr==0.4.27` Playwright/KaTeX harness. Both runs used `
 ```bash
 pip install git+https://github.com/Im-Jam/toaster-ocr.git
 
-# 1. Fetch pinned ONNX models (~129 MB total) and build QInt8 KV-cached MFR decoders locally:
+# 1. Fetch pinned models (~95 MB total) and build QInt8 KV-cached MFR decoders locally:
 toaster-ocr download
 
 # 2. OCR an image or PDF to Markdown:
 toaster-ocr ocr document.pdf -o document.md --threads 2
+
+# Skip display-math MFR when max CPU speed matters:
+toaster-ocr ocr document.pdf --no-mfr
 
 # 3. Or launch the OpenAI-compatible HTTP server (zero extra web dependencies):
 toaster-ocr serve --host 127.0.0.1 --port 8129 --threads 2
@@ -96,4 +76,4 @@ Set `TOASTER_OCR_API_KEY` to enforce `Authorization: Bearer <key>`.
 
 ## Licensing & Provenance
 
-The integration code in this repository is **Apache-2.0** (`LICENSE`). Model weights are downloaded on demand from Hugging Face under their own upstream licenses — notably `datalab-to/indra-ocr` weights are **Modified AI Pubs OpenRAIL-M**, while `SLANet_plus_onnx`, `DeepDoc TSR`, and `PP-DocLayout-S-ONNX` are **Apache-2.0**, and `pix2text-mfr-1.5` is **MIT**. See [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+The integration code in this repository is **Apache-2.0** (`LICENSE`). Model weights are downloaded on demand from Hugging Face / LiteParse under their own upstream licenses — notably `OCRia-nano-1` weights are **Modified AI Pubs OpenRAIL-M**, `LiteParse` and `PP-DocLayout-S-ONNX` are **Apache-2.0**, and `pix2text-mfr-1.5` is **MIT**. See [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).

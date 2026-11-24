@@ -95,18 +95,27 @@ def make_handler(engine: ToasterOCR, api_key: str | None = None):
                 uri = _extract_media_uri(body)
                 raw_bytes, mime = _decode_data_uri(uri)
                 baseline = bool(body.get("baseline", False))
+                enable_math_mfr = not bool(body.get("no_mfr", False))
                 with _ENGINE_LOCK:
                     if mime == "application/pdf" or raw_bytes[:4] == b"%PDF":
                         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tf:
                             tf.write(raw_bytes)
                             tmp_path = Path(tf.name)
                         try:
-                            res = engine.read_pdf(tmp_path, baseline=baseline)
+                            res = engine.read_pdf(
+                                tmp_path,
+                                baseline=baseline,
+                                enable_math_mfr=enable_math_mfr,
+                            )
                         finally:
                             tmp_path.unlink(missing_ok=True)
                     else:
                         img = Image.open(io.BytesIO(raw_bytes)).convert("RGB")
-                        res = engine.read_image(img, baseline=baseline)
+                        res = engine.read_image(
+                            img,
+                            baseline=baseline,
+                            enable_math_mfr=enable_math_mfr,
+                        )
             except Exception as exc:
                 self._send_json(400, {"error": str(exc)})
                 return

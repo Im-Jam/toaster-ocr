@@ -1,4 +1,4 @@
-"""Unit tests for FastCPUStack table matching, textlayer trust fix, and HTTP server."""
+"""Unit tests for LiteParse+MFR splicing, formula gating, and HTTP server."""
 from __future__ import annotations
 
 import base64
@@ -8,81 +8,105 @@ import sys
 import threading
 import unittest
 import urllib.request
+from dataclasses import dataclass
 from http.server import ThreadingHTTPServer
 from pathlib import Path
 from unittest.mock import MagicMock
 
-import numpy as np
 from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from toaster_ocr.fast_stack import (
-    _promote_first_row_to_th,
-    formula_conf_for_rec,
-    install_textlayer_trust_fix,
-    match_and_build_slanet_html,
+    filter_formula_boxes,
+    formula_conf_for_page,
+    is_textlayer_page,
+    splice_formulas_into_markdown,
 )
 from toaster_ocr.server import make_handler
 
 
+@dataclass
+class _BBox:
+    x: float
+    y: float
+    width: float
+    height: float
+
+
+@dataclass
+class _Block:
+    kind: str
+    bbox: _BBox
+    text: str = ""
+    text_item_indices: list[int] | None = None
+
+
+@dataclass
+class _TextItem:
+    text: str
+    font_name: str = "Times"
+
+
 class TestFastStack(unittest.TestCase):
-    def test_promote_first_row_to_th(self) -> None:
-        html = "<table><tr><td>Col A</td><td>Col B</td></tr><tr><td>1</td><td>2</td></tr></table>"
-        out = _promote_first_row_to_th(html)
-        self.assertIn("<th>Col A</th><th>Col B</th>", out)
-        self.assertIn("<td>1</td><td>2</td>", out)
-        # Idempotent if th already exists
-        self.assertEqual(_promote_first_row_to_th(out), out)
+    def test_textlayer_and_formula_threshold(self) -> None:
+        pdf_tis = [_TextItem("a", "F1") for _ in range(5)]
+        scan_tis = [_TextItem("a", "OCR") for _ in range(5)]
+        short_tis = [_TextItem("a", "F1"), _TextItem("b", "F1")]
+        self.assertTrue(is_textlayer_page(pdf_tis))
+        self.assertFalse(is_textlayer_page(scan_tis))
+        self.assertFalse(is_textlayer_page(short_tis))
+        self.assertEqual(formula_conf_for_page(True), 0.35)
+        self.assertEqual(formula_conf_for_page(False), 0.28)
 
-    def test_match_and_build_slanet_html_conserves_all_fragments(self) -> None:
-        pred_struct = [
-            "<table>", "<tbody>",
-            "<tr>", "<td></td>", "<td></td>", "</tr>",
-            "<tr>", "<td></td>", "<td></td>", "</tr>",
-            "</tbody>", "</table>",
+    def test_filter_formula_boxes_skips_tables(self) -> None:
+        table_blk = _Block("merged_table", _BBox(50, 50, 200, 100))
+        dets = [
+            ("formula", 0.90, [120.0, 120.0, 320.0, 180.0]),  # inside table at 2x scale -> skipped
+            ("formula", 0.90, [120.0, 400.0, 320.0, 460.0]),  # outside table -> kept
+            ("formula", 0.20, [120.0, 500.0, 320.0, 560.0]),  # below conf -> skipped
         ]
-        cell_bboxes = [
-            [0, 0, 50, 20],
-            [50, 0, 100, 20],
-            [0, 20, 50, 40],
-            [50, 20, 100, 40],
-        ]
-        boxes = np.array(
-            [
-                [2, 2, 48, 18],
-                [52, 2, 98, 18],
-                [2, 22, 48, 38],
-                [52, 22, 98, 38],
-            ],
-            dtype=np.float32,
+        f_px, f_pdf = filter_formula_boxes(
+            dets,
+            [table_blk],
+            img_h=1000,
+            scale_x=2.0,
+            scale_y=2.0,
+            conf_thresh=0.28,
         )
-        texts = ["Header A", "Header B", "Val 1", "Val 2"]
-        html_out, iou_rate, horiz_merge_rate = match_and_build_slanet_html(pred_struct, cell_bboxes, boxes, texts)
-        for t in texts:
-            self.assertIn(t, html_out)
-        self.assertEqual(iou_rate, 1.0)
-        self.assertEqual(horiz_merge_rate, 0.0)
-        self.assertIn("<th>Header A</th>", html_out)
+        self.assertEqual(len(f_px), 1)
+        self.assertEqual(f_pdf[0], [60.0, 200.0, 160.0, 230.0])
 
-    def test_formula_conf_for_rec(self) -> None:
-        textlayer_rec = [("a", 1.0, []), ("b", 1.0, []), ("c", 1.0, []), ("d", 1.0, [])]
-        scan_rec = [("a", 0.85, []), ("b", 0.91, []), ("c", 0.78, []), ("d", 0.92, [])]
-        short_rec = [("a", 1.0, []), ("b", 1.0, [])]
-        self.assertEqual(formula_conf_for_rec(textlayer_rec), 0.35)
-        self.assertEqual(formula_conf_for_rec(scan_rec), 0.28)
-        self.assertEqual(formula_conf_for_rec(short_rec), 0.28)
+    def test_splice_formulas_preserves_tables_and_inline_math(self) -> None:
+        # 1. On scanned pages, standalone garbled OCR block is replaced by $$...$$
+        scan_blk = _Block("paragraph", _BBox(20, 100, 180, 30), text="6. a and 5 a.")
+        tbl_blk = _Block("merged_table", _BBox(20, 200, 180, 100), text="")
+        md_scan = "<table><tr><th>A</th><td>1</td></tr></table>\n\n6. a and 5 a."
+        out_scan = splice_formulas_into_markdown(
+            md_scan,
+            [tbl_blk, scan_blk],
+            [],
+            [[18.0, 98.0, 202.0, 132.0]],
+            [r"\frac{6a}{5}"],
+            is_textlayer=False,
+        )
+        self.assertIn("<table><tr><th>A</th><td>1</td></tr></table>", out_scan)
+        self.assertIn("$$\n\\frac{6a}{5}\n$$", out_scan)
+        self.assertNotIn("6. a and 5 a.", out_scan)
 
-    def test_install_textlayer_trust_fix(self) -> None:
-        from indra_ocr import textlayer
-
-        install_textlayer_trust_fix()
-        self.assertEqual(textlayer.MAX_BAD_CHAR_FRAC, 0.05)
-        self.assertEqual(textlayer.MAX_NO_INK_LINE_FRAC, 0.30)
-        self.assertEqual(textlayer.DARK, 230)
-        # PUA checkbox U+E001 must NOT be counted as bad char; U+FFFD must be
-        self.assertEqual(textlayer.bad_char_count("Hello \ue001 world"), 0)
-        self.assertEqual(textlayer.bad_char_count("Hello \ufffd world"), 1)
+        # 2. On born-digital PDF text-layer pages, inline $math$ in prose is preserved
+        pdf_blk = _Block("paragraph", _BBox(20, 100, 180, 40), text="Let $x > 0$ satisfy V = sum")
+        md_pdf = "Let $x > 0$ satisfy V = sum"
+        out_pdf = splice_formulas_into_markdown(
+            md_pdf,
+            [pdf_blk],
+            [],
+            [[20.0, 100.0, 200.0, 140.0]],
+            [r"V = \bigoplus_i W_i"],
+            is_textlayer=True,
+        )
+        self.assertIn("Let $x > 0$ satisfy", out_pdf)
+        self.assertIn("$$\nV = \\bigoplus_i W_i\n$$", out_pdf)
 
     def test_server_endpoints(self) -> None:
         mock_engine = MagicMock()
@@ -90,7 +114,7 @@ class TestFastStack(unittest.TestCase):
         mock_result.markdown = "# Hello OCR"
         mock_result.pages = ["# Hello OCR"]
         mock_result.elapsed_seconds = 0.12
-        mock_result.stats = {"tables_replaced": 0}
+        mock_result.stats = {"formula_boxes": 0}
         mock_engine.read_image.return_value = mock_result
 
         httpd = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(mock_engine, api_key="secret-k"))
@@ -110,13 +134,15 @@ class TestFastStack(unittest.TestCase):
                 "messages": [{"role": "user", "content": [{"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}"}}]}],
             }).encode("utf-8")
 
-            # Unauthorized check
-            req_unauth = urllib.request.Request(f"http://127.0.0.1:{port}/v1/chat/completions", data=body, headers={"Content-Type": "application/json"})
+            req_unauth = urllib.request.Request(
+                f"http://127.0.0.1:{port}/v1/chat/completions",
+                data=body,
+                headers={"Content-Type": "application/json"},
+            )
             with self.assertRaises(urllib.error.HTTPError) as ctx:
                 urllib.request.urlopen(req_unauth, timeout=5)
             self.assertEqual(ctx.exception.code, 401)
 
-            # Authorized check
             req_auth = urllib.request.Request(
                 f"http://127.0.0.1:{port}/v1/chat/completions",
                 data=body,
