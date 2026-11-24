@@ -44,6 +44,14 @@ def _ort_session(path: Path, threads: int = 2) -> ort.InferenceSession:
     return ort.InferenceSession(str(path), so, providers=["CPUExecutionProvider"])
 
 
+def formula_conf_for_rec(rec: Sequence[Any]) -> float:
+    """Use conservative 0.35 formula threshold on born-digital PDF text-layer pages, 0.28 on scans."""
+    if len(rec) < 4:
+        return 0.28
+    n_ocr = sum(1 for item in rec if len(item) >= 2 and 0.0 < float(item[1]) < 0.9999)
+    return 0.35 if (n_ocr / len(rec)) < 0.35 else 0.28
+
+
 def install_textlayer_trust_fix() -> None:
     """Fix Indra's overly aggressive PDF text-layer rejection on born-digital forms & documents."""
     from indra_ocr import textlayer
@@ -792,9 +800,11 @@ class FastCPUStack:
                             for lbl, sc, bx in dets
                         ]
                     H, W = gray.shape[:2]
+                    formula_conf = formula_conf_for_rec(rec)
+                    self.page_stats["formula_conf_thresh"] = formula_conf
                     f_boxes: list[list[float]] = []
                     for lbl, sc, bx in dets:
-                        if lbl == "formula" and sc >= 0.28:
+                        if lbl == "formula" and sc >= formula_conf:
                             x0, y0, x1, y1 = bx
                             bw, bh = x1 - x0, y1 - y0
                             if bw >= 16 and bh >= 12 and bh <= 0.35 * H:

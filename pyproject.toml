@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "toaster-ocr"
-version = "0.2.0"
+version = "0.2.1"
 description = "Pure-ONNX fast-CPU document OCR combining Indra, SLANet-plus, DeepDoc TSR, PP-DocLayout-S, and KV-cached pix2text-mfr-1.5"
 readme = "README.md"
 license = {text = "Apache-2.0"}

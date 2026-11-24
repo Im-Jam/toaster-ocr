@@ -20,6 +20,7 @@ from toaster_ocr.mfr_kv import (
     N_LAYERS,
     VOCAB_SIZE,
     build_mfr_kv_onnx_from_weights,
+    quantize_onnx_int8,
 )
 
 
@@ -84,6 +85,27 @@ class TestMFRKVSplitter(unittest.TestCase):
                 self.assertEqual(sk.shape, (N_LAYERS, 2, N_HEADS, HEAD_DIM, pos + 1))
                 self.assertEqual(sv.shape, (N_LAYERS, 2, N_HEADS, pos + 1, HEAD_DIM))
                 tok = logits.argmax(-1).astype(np.int64)
+
+            # Verify dynamic QInt8 quantization shrinks step decoder and executes cleanly
+            fp32_bytes = step_p.stat().st_size
+            quantize_onnx_int8(init_p)
+            quantize_onnx_int8(step_p)
+            self.assertLess(step_p.stat().st_size, fp32_bytes)
+            s_init_q = ort.InferenceSession(str(init_p), providers=["CPUExecutionProvider"])
+            s_step_q = ort.InferenceSession(str(step_p), providers=["CPUExecutionProvider"])
+            ck_q, cv_q = s_init_q.run(None, {"encoder_hidden_states": ehs})
+            logits_q, _, _ = s_step_q.run(
+                None,
+                {
+                    "token": np.array([1, 1], dtype=np.int64),
+                    "pos": np.array(0, dtype=np.int64),
+                    "self_k": np.zeros((N_LAYERS, 2, N_HEADS, HEAD_DIM, 0), dtype=np.float32),
+                    "self_v": np.zeros((N_LAYERS, 2, N_HEADS, 0, HEAD_DIM), dtype=np.float32),
+                    "cross_k": ck_q,
+                    "cross_v": cv_q,
+                },
+            )
+            self.assertEqual(logits_q.shape, (2, VOCAB_SIZE))
 
 
 if __name__ == "__main__":

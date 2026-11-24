@@ -8,7 +8,7 @@ from typing import Iterable
 import onnx
 import yaml
 
-from .mfr_kv import convert_decoder_onnx_to_kv
+from .mfr_kv import convert_decoder_onnx_to_kv, quantize_mfr_dir
 from .paths import MODEL_SPECS, indra_dir, stack_models_dir
 
 
@@ -30,6 +30,7 @@ def download_models(
     components: Iterable[str] | None = None,
     *,
     force: bool = False,
+    quantize_mfr: bool = True,
 ) -> dict[str, Path]:
     """Download pinned models and build `mfr_dec_init.onnx` / `mfr_dec_step.onnx` locally."""
     from huggingface_hub import hf_hub_download, snapshot_download
@@ -98,6 +99,8 @@ def download_models(
             shutil.copy2(enc_dl, enc_dst)
             shutil.copy2(tok_dl, tok_dst)
             convert_decoder_onnx_to_kv(dec_dl, mfr_dir)
+            if quantize_mfr:
+                quantize_mfr_dir(mfr_dir)
         out["pix2text_mfr15"] = mfr_dir
 
     return out

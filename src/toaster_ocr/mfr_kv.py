@@ -258,3 +258,34 @@ def convert_decoder_onnx_to_kv(decoder_onnx_path: str | Path, out_dir: str | Pat
     """Extract weights from `decoder_model.onnx` and emit `mfr_dec_init.onnx` + `mfr_dec_step.onnx`."""
     weights = extract_mfr_kv_weights(decoder_onnx_path)
     return build_mfr_kv_onnx_from_weights(weights, out_dir)
+
+
+def quantize_onnx_int8(src_path: str | Path, dst_path: str | Path | None = None) -> Path:
+    """Apply dynamic QInt8 quantization to MatMul/Gemm ops (~3.5x smaller, ~1.7-1.9x faster on CPU)."""
+    import shutil
+    import tempfile
+    from onnxruntime.quantization import QuantType, quantize_dynamic
+
+    src = Path(src_path)
+    dst = Path(dst_path) if dst_path is not None else src
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=str(dst.parent)) as tmp:
+        tmp_out = Path(tmp) / dst.name
+        quantize_dynamic(
+            str(src),
+            str(tmp_out),
+            weight_type=QuantType.QInt8,
+            op_types_to_quantize=["MatMul", "Gemm"],
+        )
+        shutil.move(str(tmp_out), str(dst))
+    return dst
+
+
+def quantize_mfr_dir(mfr_dir: str | Path) -> tuple[Path, Path, Path]:
+    """Quantize encoder_model.onnx, mfr_dec_init.onnx, and mfr_dec_step.onnx to dynamic QInt8."""
+    d = Path(mfr_dir)
+    return (
+        quantize_onnx_int8(d / "encoder_model.onnx"),
+        quantize_onnx_int8(d / "mfr_dec_init.onnx"),
+        quantize_onnx_int8(d / "mfr_dec_step.onnx"),
+    )

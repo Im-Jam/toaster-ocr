@@ -1,17 +1,24 @@
 # toaster-ocr
 
-**Fast, pure-ONNX, CPU-only document OCR** — zero GPU, zero PyTorch, zero PaddlePaddle (`~214 MB` total ONNX footprint).
+**Fast, pure-ONNX, CPU-only document OCR** — zero GPU, zero PyTorch, zero PaddlePaddle (`~129 MB` total ONNX footprint in `v0.2.1`).
 
 `toaster-ocr` layers four targeted, pure-ONNX CPU upgrades on top of **[Indra OCR `1.1.2`](https://github.com/datalab-to/indra-ocr)** (`math=True`):
 
 1. **5-Fold-CV Table Ensemble (`SLANet-plus` 7.4 MB + `DeepDoc TSR` 12.2 MB + 100%-conserving `<br>` matcher):** Cross-validated router picks between `SLANet-plus`, `InfiniFlow/deepdoc` `tsr.onnx`, and native Indra with a sparse-grid fallback — lifting **OPB Tables from `59.60%` to `73.32%` (`+13.72 pts`, `+739` net tests)**, beating `DeepSeek-OCR-2`, `LightOnOCR-3-0.8B`, and `LightOnOCR-3-4B` on OPB Tables.
-2. **`PP-DocLayout-S` ONNX (4.7 MB @ `conf=0.28`, ~73 ms/page on 2 ARM64 cores) + KV-Cached `pix2text-mfr-1.5`:** Splits `pix2text-mfr-1.5`'s uncached ONNX decoder locally into `mfr_dec_init.onnx` (4.5 MB) + `mfr_dec_step.onnx` (25.8 MB) (`9.6×` faster on CPU, `100%` token parity) — lifting **`olmOCR-bench` `old_scans_math` from `3.49%` to `40.61%` (`+37.12 pts`)** and **`arxiv_math` from `55.93%` to `66.72%` (`+10.79 pts`)**.
+2. **`PP-DocLayout-S` ONNX (4.7 MB, ~73 ms/page on 2 ARM64 cores) + Dynamic `QInt8` KV-Cached `pix2text-mfr-1.5`:** Splits `pix2text-mfr-1.5`'s uncached ONNX decoder locally into `mfr_dec_init.onnx` + `mfr_dec_step.onnx` (`9.6×` faster decode) and applies dynamic `QInt8` quantization (`119 MB → 34.3 MB`, `~1.7–2.0×` faster math pages). Uses a conservative `conf=0.35` formula threshold on clean born-digital PDF text layers and `conf=0.28` on scanned pages.
 3. **Page-Adaptive `lm.npz` Beam Search:** Only boosts Indra's 46 MB n-gram beam (`LM_GATE → 0.985`, `LM_BEAM → 16`) on pages whose median line confidence is `< 0.91`, fixing spacing/character slips on degraded pages with zero slowdown on clean pages.
 4. **PDF `textlayer.py` PUA/Ink Fix:** Stops rejecting valid born-digital PDF text layers that contain Private-Use-Area checkboxes (`Co`) or sparse lines.
 
 ---
 
 ## Verified Benchmarks
+
+### `v0.2.1` Math Speed & Size Update (96 OPB Math Pages, 796 Tests, 2-Core ARM64)
+
+- **Model weights:** MFR drops **`119.2 MB → 34.3 MB`** (`-85 MB`); total stack drops **`~214 MB → ~129 MB`**.
+- **`olmo_old_scans_math` (36 pages / 450 tests):** FP32 `224/450` (`49.8%`, `459.5s` CPU) → **`QInt8` (`conf=0.28`) `230/450` (`51.1%`, `+6` tests, `270.5s` CPU — `1.70×` faster)**.
+- **`olmo_arxiv_math` (60 pages / 346 tests):** FP32 `262/346` (`75.7%`, `887.9s` CPU) → **`QInt8` (`conf=0.35` on text layers) `263/346` (`76.0%`, `+1` test, `437.3s` CPU — `2.03×` faster)**.
+- *(If upgrading from `v0.2.0`, re-run `toaster-ocr download --only pix2text_mfr15 --force` to rebuild the quantized MFR decoders.)*
 
 ### 1. Omni Parse Bench (Full 2,937 Pages / 16,288 Unit Tests, 0 Errors)
 
@@ -55,7 +62,7 @@ Scored with official `olmocr==0.4.27` Playwright/KaTeX harness. Both runs used `
 ```bash
 pip install git+https://github.com/Im-Jam/toaster-ocr.git
 
-# 1. Fetch pinned ONNX models (~214 MB total) and build KV-cached MFR decoders locally:
+# 1. Fetch pinned ONNX models (~129 MB total) and build QInt8 KV-cached MFR decoders locally:
 toaster-ocr download
 
 # 2. OCR an image or PDF to Markdown:

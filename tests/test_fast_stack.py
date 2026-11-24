@@ -19,6 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from toaster_ocr.fast_stack import (
     _promote_first_row_to_th,
+    formula_conf_for_rec,
     install_textlayer_trust_fix,
     match_and_build_slanet_html,
 )
@@ -63,6 +64,14 @@ class TestFastStack(unittest.TestCase):
         self.assertEqual(iou_rate, 1.0)
         self.assertEqual(horiz_merge_rate, 0.0)
         self.assertIn("<th>Header A</th>", html_out)
+
+    def test_formula_conf_for_rec(self) -> None:
+        textlayer_rec = [("a", 1.0, []), ("b", 1.0, []), ("c", 1.0, []), ("d", 1.0, [])]
+        scan_rec = [("a", 0.85, []), ("b", 0.91, []), ("c", 0.78, []), ("d", 0.92, [])]
+        short_rec = [("a", 1.0, []), ("b", 1.0, [])]
+        self.assertEqual(formula_conf_for_rec(textlayer_rec), 0.35)
+        self.assertEqual(formula_conf_for_rec(scan_rec), 0.28)
+        self.assertEqual(formula_conf_for_rec(short_rec), 0.28)
 
     def test_install_textlayer_trust_fix(self) -> None:
         from indra_ocr import textlayer
