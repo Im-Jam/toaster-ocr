@@ -8,6 +8,7 @@ models/
 .env
 *.png
 !benchmarks/*.png
+!assets/*.png
 *.jpg
 *.jpeg
 *.pdf

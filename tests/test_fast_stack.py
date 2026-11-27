@@ -11,17 +11,24 @@ import urllib.request
 from dataclasses import dataclass
 from http.server import ThreadingHTTPServer
 from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock
 
 from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
+from toaster_ocr.engine import ToasterOCR
 from toaster_ocr.fast_stack import (
     filter_formula_boxes,
     formula_conf_for_page,
     is_textlayer_page,
     splice_formulas_into_markdown,
+)
+from toaster_ocr.moe import (
+    is_valid_display_latex,
+    should_prefer_ocria_table,
+    splice_tables_jaccard,
 )
 from toaster_ocr.server import make_handler
 
@@ -108,6 +115,41 @@ class TestFastStack(unittest.TestCase):
         self.assertIn("Let $x > 0$ satisfy", out_pdf)
         self.assertIn("$$\nV = \\bigoplus_i W_i\n$$", out_pdf)
 
+    def test_layout_blocks_mapping(self) -> None:
+        @dataclass
+        class _Cell:
+            text: str
+
+        @dataclass
+        class _TblBlock:
+            kind: str
+            bbox: _BBox
+            text: str | None = None
+            header: list[_Cell] | None = None
+            rows: list[list[_Cell]] | None = None
+
+        @dataclass
+        class _Page:
+            width: float
+            height: float
+            blocks: list[Any]
+
+        pg = _Page(
+            width=200.0,
+            height=400.0,
+            blocks=[
+                _TblBlock("merged_table", _BBox(20, 40, 100, 80), header=[_Cell("H1")], rows=[[_Cell("C1")]]),
+                _TblBlock("page_header", _BBox(0, 0, 200, 20), text="Header"),
+                _TblBlock("page_footer", _BBox(0, 380, 200, 20), text="Page 1"),
+                _TblBlock("heading", _BBox(20, 20, 100, 20), text="Title"),
+                _TblBlock("list_item", _BBox(20, 140, 100, 20), text="Item"),
+            ],
+        )
+        got = ToasterOCR._layout_blocks(pg)
+        self.assertEqual([b["label"] for b in got], ["table", "page_furniture", "page_furniture", "heading", "list"])
+        self.assertEqual(got[0]["text"], "H1 C1")
+        self.assertEqual(got[0]["bbox"], [0.1, 0.1, 0.6, 0.3])
+
     def test_server_endpoints(self) -> None:
         mock_engine = MagicMock()
         mock_result = MagicMock()
@@ -154,6 +196,29 @@ class TestFastStack(unittest.TestCase):
         finally:
             httpd.shutdown()
             httpd.server_close()
+
+    def test_moe_table_splicer_and_arbiter(self) -> None:
+        base_md = (
+            "Intro\n\n<table><tr><th>Age</th><th>$I V P$</th></tr><tr><td>Mean<br>SD</td><td>10.2<br>3.1</td></tr></table>\n\n"
+            "Middle\n\n<table><tr><th>Other</th><th>Val</th></tr><tr><td>X</td><td>9</td></tr></table>"
+        )
+        donor_md = (
+            "Intro\n\n<table><tr><th>Age</th><th>IVP</th></tr><tr><td>Mean</td><td>10.2</td></tr><tr><td>SD</td><td>3.1</td></tr></table>"
+        )
+        spliced = splice_tables_jaccard(base_md, donor_md)
+        self.assertIsNotNone(spliced)
+        assert spliced is not None
+        # Must preserve both base slots (max(2, 1) == 2 tables) and replace the matching first slot
+        self.assertEqual(spliced.count("<table"), 2)
+        self.assertIn("<td>SD</td><td>3.1</td>", spliced)
+        self.assertIn("<td>X</td><td>9</td>", spliced)
+        self.assertTrue(should_prefer_ocria_table(base_md, donor_md))
+        self.assertFalse(should_prefer_ocria_table(base_md, donor_md, lp_is_garbled=True))
+
+    def test_display_latex_verifier(self) -> None:
+        self.assertTrue(is_valid_display_latex(r"$$\delta = \frac{\rho_1 + \rho_2}{\omega_2}$$"))
+        self.assertFalse(is_valid_display_latex(r"$$x^{2 + y{2 = 2ax$$"))
+        self.assertFalse(is_valid_display_latex("$$~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~$$"))
 
 
 if __name__ == "__main__":

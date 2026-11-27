@@ -1,21 +1,18 @@
-"""toaster-ocr: fast pure-ONNX CPU document OCR."""
+"""toaster-ocr: Fast pure-ONNX CPU document OCR (v0.4 System MoE)."""
 from __future__ import annotations
 
 from .download import download_models
 from .engine import OCRResult, ToasterOCR
 from .fast_stack import PPDocLayoutSONNX, Pix2TextMFRKVONNX
-from .paths import MODEL_SPECS, cache_home, stack_models_dir
-
-__version__ = "0.3.0"
+from .moe import should_prefer_ocria_table, splice_tables_jaccard
 
 __all__ = [
-    "MODEL_SPECS",
     "OCRResult",
     "PPDocLayoutSONNX",
     "Pix2TextMFRKVONNX",
     "ToasterOCR",
-    "__version__",
-    "cache_home",
     "download_models",
-    "stack_models_dir",
+    "should_prefer_ocria_table",
+    "splice_tables_jaccard",
 ]
+__version__ = "0.4.0"
